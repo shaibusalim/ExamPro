@@ -23,6 +23,7 @@ lerna-debug.log*
 
 # misc
 .DS_Store
+.env
 .env.local
 .env.development.local
 .env.test.local
@@ -37,6 +38,8 @@ npm-debug.log
 *.srl
 *.bak
 *.orig
+/DEPLOYMENT.md
+/IMPLEMENTATION_SUMMARY.md
 # Firebase
 .firebase/
 firebase-debug.log
