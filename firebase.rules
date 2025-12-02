@@ -1,0 +1,78 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Default rule: Deny all access
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // User profiles - Allow users to read their own profile
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // Teacher rules - Teachers can read/write their own data in specific collections
+    // For simplicity, a broad rule allowing authenticated teachers to manage relevant collections.
+    // In a production app, these would be more granular based on 'createdBy' or 'teacherId' fields.
+    match /classes/{classId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+    match /exams/{examId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+    // Allow teachers to write to subcollections of exams (e.g., questions within an exam)
+    match /exams/{examId}/{documents=**} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+    match /questions/{questionId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+    match /topics/{topicId} {
+      allow read, write: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    // Student rules - Students can read specific data
+    match /enrollments/{enrollmentId} {
+      // Students can read their own enrollment records
+      allow read: if request.auth != null && request.auth.uid == resource.data.studentId;
+    }
+
+    match /exam_attempts/{attemptId} {
+      // Students can read their own exam attempts
+      allow read: if request.auth != null && request.auth.uid == resource.data.studentId;
+      // Teachers can read all exam attempts (e.g., for analytics)
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'teacher';
+    }
+
+    match /exams/{examId} {
+      // Students can read exams that are published/active AND are part of a class they are enrolled in.
+      // The API endpoint '/api/student/exams' is responsible for checking enrollment.
+      // This rule allows the API to fetch exams based on their status for student role.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student' &&
+                  (resource.data.status == 'published' || resource.data.status == 'active');
+    }
+
+    match /classes/{classId} {
+      // Students can read class details if they are part of a class that is linked to their enrolled exams.
+      // The API endpoint '/api/student/exams' is responsible for linking classes via enrolled exams.
+      // This rule simply allows authenticated student roles to read class data, as the API will filter.
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+
+    match /topics/{topicId} {
+      // Students can read topics (e.g., for practice mode)
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+
+    match /questions/{questionId} {
+      // Students can read questions (e.g., for practice mode or exams)
+      allow read: if request.auth != null && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'student';
+    }
+
+    // Activity logs - Allow any authenticated user to create a log entry
+    match /activity_logs/{logId} {
+      allow create: if request.auth != null;
+    }
+  }
+}
