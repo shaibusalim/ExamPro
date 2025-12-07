@@ -8,6 +8,7 @@ export interface AuthToken {
   userId: string;
   email: string;
   role: "teacher" | "student" | "admin";
+  classLevel?: string; // Added classLevel
   iat: number;
   exp: number;
 }
@@ -48,4 +49,24 @@ export function getTokenFromCookies(cookies: string): string | null {
     }
   }
   return null
+}
+
+// Server-side function to verify authentication from a NextRequest
+export async function verifyAuth(req: Request) {
+  const token = req.headers.get('Authorization')?.split(' ')[1];
+
+  if (!token) {
+    return { isValid: false, userId: null, role: null };
+  }
+
+  try {
+    const decodedToken = verifyToken(token);
+    if (decodedToken) {
+      return { isValid: true, userId: decodedToken.userId, role: decodedToken.role };
+    }
+    return { isValid: false, userId: null, role: null };
+  } catch (error) {
+    console.error("Error verifying auth token:", error);
+    return { isValid: false, userId: null, role: null };
+  }
 }

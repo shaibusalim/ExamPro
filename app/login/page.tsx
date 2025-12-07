@@ -48,7 +48,9 @@ export default function LoginPage() {
       }
 
       // Redirect based on role
-      if (data.user.role === "teacher") {
+      if (data.user.role === "admin") {
+        router.push("/admin/dashboard");
+      } else if (data.user.role === "teacher") {
         router.push("/teacher/dashboard");
       } else {
         router.push("/student/dashboard");
@@ -115,7 +117,7 @@ export default function LoginPage() {
 
         <div className="text-center text-sm">
           <p className="text-muted-foreground">
-            Don't have an account?{" "}
+            Don\'t have an account?{" "}
             <Link href="/register" className="text-primary hover:underline font-semibold">
               Create one
             </Link>

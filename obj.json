@@ -1,0 +1,272 @@
+[
+  {
+    "questionText": "Which of the following is an input device?",
+    "options": [
+      { "text": "Keyboard", "isCorrect": true },
+      { "text": "Monitor", "isCorrect": false },
+      { "text": "Speaker", "isCorrect": false },
+      { "text": "Projector", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "The part of the computer that displays information is the:",
+    "options": [
+      { "text": "Keyboard", "isCorrect": false },
+      { "text": "Mouse", "isCorrect": false },
+      { "text": "Monitor", "isCorrect": true },
+      { "text": "Scanner", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which device is used to print documents?",
+    "options": [
+      { "text": "Printer", "isCorrect": true },
+      { "text": "Projector", "isCorrect": false },
+      { "text": "Keyboard", "isCorrect": false },
+      { "text": "Speaker", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which component is known as the 'brain' of the computer?",
+    "options": [
+      { "text": "CPU", "isCorrect": true },
+      { "text": "RAM", "isCorrect": false },
+      { "text": "Monitor", "isCorrect": false },
+      { "text": "Mouse", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of the following stores data temporarily?",
+    "options": [
+      { "text": "RAM", "isCorrect": true },
+      { "text": "Hard Drive", "isCorrect": false },
+      { "text": "CD-ROM", "isCorrect": false },
+      { "text": "Flash Drive", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of these is an example of system software?",
+    "options": [
+      { "text": "Windows", "isCorrect": true },
+      { "text": "Microsoft Word", "isCorrect": false },
+      { "text": "PowerPoint", "isCorrect": false },
+      { "text": "Excel", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which device is used to move the pointer on the screen?",
+    "options": [
+      { "text": "Mouse", "isCorrect": true },
+      { "text": "Keyboard", "isCorrect": false },
+      { "text": "Scanner", "isCorrect": false },
+      { "text": "Monitor", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "The full meaning of ICT is:",
+    "options": [
+      { "text": "Information and Communication Technology", "isCorrect": true },
+      { "text": "International Computer Tools", "isCorrect": false },
+      { "text": "Internet and Computer Techniques", "isCorrect": false },
+      { "text": "Information and Computing Tools", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "A device that converts hard copy into soft copy is:",
+    "options": [
+      { "text": "Scanner", "isCorrect": true },
+      { "text": "Printer", "isCorrect": false },
+      { "text": "Projector", "isCorrect": false },
+      { "text": "Speaker", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of the following is not an output device?",
+    "options": [
+      { "text": "Speaker", "isCorrect": false },
+      { "text": "Mouse", "isCorrect": true },
+      { "text": "Monitor", "isCorrect": false },
+      { "text": "Printer", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which part of the computer stores files permanently?",
+    "options": [
+      { "text": "Hard Disk", "isCorrect": true },
+      { "text": "RAM", "isCorrect": false },
+      { "text": "CPU", "isCorrect": false },
+      { "text": "Cache", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of the following is a storage device?",
+    "options": [
+      { "text": "Flash Drive", "isCorrect": true },
+      { "text": "Monitor", "isCorrect": false },
+      { "text": "Keyboard", "isCorrect": false },
+      { "text": "Mouse", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "The device used to project visuals onto a large screen is:",
+    "options": [
+      { "text": "Projector", "isCorrect": true },
+      { "text": "Scanner", "isCorrect": false },
+      { "text": "Printer", "isCorrect": false },
+      { "text": "Monitor", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of the following is an example of an application software?",
+    "options": [
+      { "text": "Microsoft Word", "isCorrect": true },
+      { "text": "Windows 10", "isCorrect": false },
+      { "text": "Android OS", "isCorrect": false },
+      { "text": "Linux Kernel", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "The part of the computer where processing takes place is:",
+    "options": [
+      { "text": "CPU", "isCorrect": true },
+      { "text": "Printer", "isCorrect": false },
+      { "text": "RAM", "isCorrect": false },
+      { "text": "Monitor", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Microsoft Excel is mainly used for:",
+    "options": [
+      { "text": "Typing letters", "isCorrect": false },
+      { "text": "Calculations and spreadsheets", "isCorrect": true },
+      { "text": "Drawing pictures", "isCorrect": false },
+      { "text": "Presentations", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which key removes characters to the left of the cursor?",
+    "options": [
+      { "text": "Backspace", "isCorrect": true },
+      { "text": "Delete", "isCorrect": false },
+      { "text": "Enter", "isCorrect": false },
+      { "text": "Shift", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "A computer virus is a type of:",
+    "options": [
+      { "text": "Malware", "isCorrect": true },
+      { "text": "Application software", "isCorrect": false },
+      { "text": "Network", "isCorrect": false },
+      { "text": "Browser", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of these is a web browser?",
+    "options": [
+      { "text": "Google Chrome", "isCorrect": true },
+      { "text": "File Explorer", "isCorrect": false },
+      { "text": "Calculator", "isCorrect": false },
+      { "text": "Recycle Bin", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "The device used to play sound is:",
+    "options": [
+      { "text": "Speaker", "isCorrect": true },
+      { "text": "Monitor", "isCorrect": false },
+      { "text": "Keyboard", "isCorrect": false },
+      { "text": "Mouse", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which file extension belongs to an image?",
+    "options": [
+      { "text": ".jpg", "isCorrect": true },
+      { "text": ".exe", "isCorrect": false },
+      { "text": ".txt", "isCorrect": false },
+      { "text": ".mp3", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of the following is used to store data on a mobile phone?",
+    "options": [
+      { "text": "Memory card", "isCorrect": true },
+      { "text": "Mouse", "isCorrect": false },
+      { "text": "Monitor", "isCorrect": false },
+      { "text": "Scanner", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "A group of connected computers is called a:",
+    "options": [
+      { "text": "Network", "isCorrect": true },
+      { "text": "Server", "isCorrect": false },
+      { "text": "Database", "isCorrect": false },
+      { "text": "Website", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which key is pressed to start a new line?",
+    "options": [
+      { "text": "Enter", "isCorrect": true },
+      { "text": "Tab", "isCorrect": false },
+      { "text": "Esc", "isCorrect": false },
+      { "text": "Shift", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of the following is used to protect a computer from viruses?",
+    "options": [
+      { "text": "Antivirus software", "isCorrect": true },
+      { "text": "Calculator", "isCorrect": false },
+      { "text": "Media Player", "isCorrect": false },
+      { "text": "Paint", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of these is a storage medium?",
+    "options": [
+      { "text": "CD", "isCorrect": true },
+      { "text": "Mouse", "isCorrect": false },
+      { "text": "Keyboard", "isCorrect": false },
+      { "text": "Monitor", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of the following is used to connect a computer to the internet?",
+    "options": [
+      { "text": "Modem", "isCorrect": true },
+      { "text": "Printer", "isCorrect": false },
+      { "text": "Keyboard", "isCorrect": false },
+      { "text": "Scanner", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Software that controls hardware is called:",
+    "options": [
+      { "text": "System software", "isCorrect": true },
+      { "text": "Application software", "isCorrect": false },
+      { "text": "Utility software", "isCorrect": false },
+      { "text": "Browser", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "The small arrow on the screen that moves when you move the mouse is called:",
+    "options": [
+      { "text": "Cursor", "isCorrect": true },
+      { "text": "Icon", "isCorrect": false },
+      { "text": "Menu", "isCorrect": false },
+      { "text": "Pointer Box", "isCorrect": false }
+    ]
+  },
+  {
+    "questionText": "Which of these is NOT a computer?",
+    "options": [
+      { "text": "Printer", "isCorrect": true },
+      { "text": "Laptop", "isCorrect": false },
+      { "text": "Desktop", "isCorrect": false },
+      { "text": "Tablet", "isCorrect": false }
+    ]
+  }
+]

@@ -38,7 +38,8 @@ export default function ExamPage() {
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const attemptIdRef = useRef("")
-  const timerRef = useRef<NodeJS.Timeout>()
+  const timerRef = useRef<NodeJS.Timeout | undefined>(undefined)
+  const [error, setError] = useState("")
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
@@ -52,26 +53,40 @@ export default function ExamPage() {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((res) => res.json())
-      .then((data) => {
+      .then(async (res) => {
+        if (!res.ok) {
+          try {
+            const body = await res.json()
+            setError(String(body?.error || "Exam not available"))
+          } catch {
+            setError("Exam not available")
+          }
+          setLoading(false)
+          return
+        }
+        const data = await res.json()
         attemptIdRef.current = data.attemptId
-        setQuestions(data.questions)
-        setTimeLeft(data.questions[0]?.duration_minutes * 60 || 60 * 60)
+        setQuestions(Array.isArray(data.questions) ? data.questions : [])
+        const mins = typeof data.duration_minutes === 'number' ? data.duration_minutes : 60
+        setTimeLeft(mins * 60)
         setLoading(false)
       })
-      .catch((err) => console.error(err))
+      .catch((err) => {
+        console.error(err)
+        setLoading(false)
+      })
   }, [examId, router])
 
   // Timer
   useEffect(() => {
-    if (!loading && timeLeft > 0) {
+    if (!loading && !error && timeLeft > 0) {
       timerRef.current = setTimeout(() => setTimeLeft(timeLeft - 1), 1000)
-    } else if (timeLeft === 0 && !loading) {
+    } else if (timeLeft === 0 && !loading && !error) {
       handleSubmit()
     }
 
     return () => clearTimeout(timerRef.current)
-  }, [timeLeft, loading])
+  }, [timeLeft, loading, error])
 
   // Auto-save every 10 seconds
   useEffect(() => {
@@ -103,6 +118,28 @@ export default function ExamPage() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <Card className="p-8 text-center space-y-4">
+          <h2 className="text-xl font-semibold">{error}</h2>
+          <Button onClick={() => router.push('/student/dashboard')}>Back to Dashboard</Button>
+        </Card>
+      </div>
+    )
+  }
+
+  if (!questions.length) {
+    return (
+      <div className="min-h-screen bg-background p-4">
+        <Card className="p-8 text-center space-y-4">
+          <h2 className="text-xl font-semibold">No questions available for this exam</h2>
+          <Button onClick={() => router.push('/student/dashboard')}>Back to Dashboard</Button>
+        </Card>
+      </div>
+    )
+  }
+
   const question = questions[currentQuestion]
   const progress = ((currentQuestion + 1) / questions.length) * 100
   const minutes = Math.floor(timeLeft / 60)
@@ -128,8 +165,17 @@ export default function ExamPage() {
         }),
       })
 
-      const data = await response.json()
-      router.push(`/student/results/${examId}`)
+      if (!response.ok) {
+        try {
+          const body = await response.json()
+          alert(String(body?.error || "Failed to submit exam"))
+        } catch {
+          alert("Failed to submit exam")
+        }
+      } else {
+        const data = await response.json()
+        router.push(`/student/results/${examId}`)
+      }
     } catch (error) {
       console.error(error)
       alert("Failed to submit exam")
@@ -169,7 +215,7 @@ export default function ExamPage() {
         <div className="md:col-span-3">
           <Card className="p-8 space-y-6">
             <div>
-              <h2 className="text-2xl font-semibold mb-4">{question.question_text}</h2>
+              <h2 className="text-2xl font-semibold mb-4">{String((question as any).question_text || (question as any).question || "")}</h2>
               <span className="text-sm text-muted-foreground">{question.marks} mark(s)</span>
             </div>
 
@@ -180,7 +226,21 @@ export default function ExamPage() {
                   value={responses[question.id]?.selectedOptionId || ""}
                   onValueChange={(value) => updateResponse({ selectedOptionId: value })}
                 >
-                  {/* Options would be populated here */}
+                  {Array.isArray((question as any).options) && (question as any).options.length > 0 ? (
+                    (question as any).options.map((opt: any) => (
+                      <label key={String(opt.id)} className="flex items-center gap-2 p-2 border rounded">
+                        <input
+                          type="radio"
+                          value={String(opt.id)}
+                          checked={responses[question.id]?.selectedOptionId === String(opt.id)}
+                          onChange={(e) => updateResponse({ selectedOptionId: e.target.value })}
+                        />
+                        <span>{opt.text || opt.option || opt.label || String(opt)}</span>
+                      </label>
+                    ))
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No options available.</p>
+                  )}
                 </RadioGroup>
               )}
 
@@ -191,6 +251,41 @@ export default function ExamPage() {
                   onChange={(e) => updateResponse({ textResponse: e.target.value })}
                   className="min-h-32"
                 />
+              )}
+              {question.question_type === "true_false" && (
+                <div className="flex gap-4">
+                  {shouldSwapTF(attemptIdRef.current, question.id) ? (
+                    <>
+                      <Button
+                        variant={responses[question.id]?.selectedOptionId === 'false' ? 'default' : 'outline'}
+                        onClick={() => updateResponse({ selectedOptionId: 'false', selectedOptionText: 'false' })}
+                      >
+                        False
+                      </Button>
+                      <Button
+                        variant={responses[question.id]?.selectedOptionId === 'true' ? 'default' : 'outline'}
+                        onClick={() => updateResponse({ selectedOptionId: 'true', selectedOptionText: 'true' })}
+                      >
+                        True
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        variant={responses[question.id]?.selectedOptionId === 'true' ? 'default' : 'outline'}
+                        onClick={() => updateResponse({ selectedOptionId: 'true', selectedOptionText: 'true' })}
+                      >
+                        True
+                      </Button>
+                      <Button
+                        variant={responses[question.id]?.selectedOptionId === 'false' ? 'default' : 'outline'}
+                        onClick={() => updateResponse({ selectedOptionId: 'false', selectedOptionText: 'false' })}
+                      >
+                        False
+                      </Button>
+                    </>
+                  )}
+                </div>
               )}
             </div>
 
@@ -258,3 +353,10 @@ export default function ExamPage() {
     </div>
   )
 }
+  function seedFromString(s: string) {
+    return Array.from(s).reduce((acc, ch) => acc + ch.charCodeAt(0), 0)
+  }
+  function shouldSwapTF(attemptId: string, qid: string) {
+    const seed = seedFromString(String(attemptId || '') + String(qid || ''))
+    return seed % 2 === 1
+  }

@@ -106,4 +106,11 @@ export const api = {
 
   // Analytics
   getAnalytics: (token: string) => apiCall("/api/teacher/analytics", { token }),
+
+  // AI Question Generation
+  generateQuestions: (data: { type: string; topic: string; difficulty: string; count: number }) =>
+    apiCall("/api/generate-questions", {
+      method: "POST",
+      body: JSON.stringify(data),
+    }),
 }

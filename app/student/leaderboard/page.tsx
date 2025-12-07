@@ -19,15 +19,25 @@ export default function LeaderboardPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Mock data - would fetch from API
-    const mockData: StudentScore[] = [
-      { id: "1", full_name: "Ama Osei", avg_score: 92, total_exams: 5, passed_exams: 5 },
-      { id: "2", full_name: "Kofi Asante", avg_score: 87, total_exams: 5, passed_exams: 5 },
-      { id: "3", full_name: "Abena Boateng", avg_score: 85, total_exams: 4, passed_exams: 4 },
-      { id: "4", full_name: "Yaw Mensah", avg_score: 78, total_exams: 5, passed_exams: 4 },
-    ]
-    setStudents(mockData)
-    setLoading(false)
+    async function load() {
+      setLoading(true)
+      try {
+        const token = localStorage.getItem("auth_token")
+        const res = await fetch("/api/student/leaderboard", { headers: { Authorization: `Bearer ${token}` } })
+        if (!res.ok) {
+          setStudents([])
+          setLoading(false)
+          return
+        }
+        const data = await res.json()
+        setStudents(Array.isArray(data) ? data : [])
+      } catch (e) {
+        setStudents([])
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
   }, [])
 
   if (loading) {

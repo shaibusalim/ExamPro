@@ -45,6 +45,8 @@ npm-debug.log
 firebase-debug.log
 .firebaserc
 .runtimeconfig.json
+serviceAccountKey.json
+
 
 # IDEs and editors
 .vscode/

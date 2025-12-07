@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, getDoc, orderBy } from "firebase/firestore";
+import { firestore } from "@/lib/firebaseAdmin";
 
 export async function GET(request: NextRequest) {
   try {
@@ -22,71 +21,99 @@ export async function GET(request: NextRequest) {
     }
 
     const studentId = decoded.userId;
+
+    const userDoc = await firestore.collection("users").doc(studentId).get();
+    const userData = userDoc.exists ? (userDoc.data() as any) : null;
+    if (userData?.lockedDashboard) {
+      return NextResponse.json({ error: "Dashboard locked" }, { status: 403 });
+    }
+    if (userData?.lockedExams) {
+      return NextResponse.json({ error: "Exams locked" }, { status: 403 });
+    }
     console.log("[API/Student/Exams] Student ID:", studentId); // Debugging
 
     // 1. Get all classes the student is enrolled in
-    const enrollmentsRef = collection(db, "enrollments");
-    const enrollmentQuery = query(enrollmentsRef, where("studentId", "==", studentId));
-    const enrollmentSnapshot = await getDocs(enrollmentQuery);
+    const enrollmentSnapshot = await firestore
+      .collection("enrollments")
+      .where("studentId", "==", studentId)
+      .get();
+
+    let enrolledClassIds = enrollmentSnapshot.docs.map(doc => doc.data().classId);
 
     if (enrollmentSnapshot.empty) {
-      return NextResponse.json([]); // No enrolled classes, no exams
+      const studentClassLevel = userData?.classLevel;
+      if (studentClassLevel) {
+        const classesSnapshot = await firestore
+          .collection("classes")
+          .where("level", "==", studentClassLevel)
+          .get();
+        enrolledClassIds = classesSnapshot.docs.map(d => d.id);
+      }
+      if (!enrolledClassIds || enrolledClassIds.length === 0) {
+        return NextResponse.json([]);
+      }
     }
-
-    const enrolledClassIds = enrollmentSnapshot.docs.map(doc => doc.data().classId);
 
     // 2. Fetch exams for these enrolled classes that are published or active
     // Firestore 'in' query supports up to 10 classIds. If more, multiple queries are needed.
-    const examsRef = collection(db, "exams");
-    let examsQuery = query(
-      examsRef,
-      where("classId", "in", enrolledClassIds.slice(0, 10)), // Handle up to 10 classIds
-      where("status", "in", ["published", "active"]),
-      orderBy("createdAt", "desc")
-    );
-
-    const examsSnapshot = await getDocs(examsQuery);
+    const examsSnapshot = await firestore
+      .collection("exams")
+      .where("classId", "in", enrolledClassIds.slice(0, 10))
+      .where("status", "in", ["published", "active"])
+      .get();
 
     const exams = await Promise.all(examsSnapshot.docs.map(async (examDoc) => {
       const examData = examDoc.data();
+      if (examData.locked === true) {
+        return null;
+      }
       const classId = examData.classId;
 
       // Fetch class name
       let className = null;
       if (classId) {
-        const classDoc = await getDoc(doc(db, "classes", classId));
-        if (classDoc.exists()) {
-          className = classDoc.data().name;
+        const classDoc = await firestore.collection("classes").doc(classId).get();
+        if (classDoc.exists) {
+          className = (classDoc.data() as any)?.name || null;
         }
       }
 
       // Get student's attempt for this exam (if any)
       let attemptId = null;
       let score = null;
-      const attemptQuery = query(
-        collection(db, "exam_attempts"),
-        where("examId", "==", examDoc.id),
-        where("studentId", "==", studentId)
-      );
-      const attemptSnapshot = await getDocs(attemptQuery);
+      let status: string | null = null;
+      const attemptSnapshot = await firestore
+        .collection("exam_attempts")
+        .where("examId", "==", examDoc.id)
+        .where("studentId", "==", studentId)
+        .get();
 
       if (!attemptSnapshot.empty) {
-        const attemptData = attemptSnapshot.docs[0].data();
+        const attemptData = attemptSnapshot.docs[0].data() as any;
         attemptId = attemptSnapshot.docs[0].id;
-        score = attemptData.score;
+        score = attemptData.score ?? null;
+        status = String(attemptData.status || "");
       }
 
       return {
         id: examDoc.id,
-        ...examData,
+        title: examData.title || "Exam",
         class_name: className,
-        attempt_id: attemptId,
-        score: score,
+        duration_minutes: Number((examData as any).durationMinutes || (examData as any).duration_minutes || 60),
+        total_marks: Number((examData as any).totalMarks || (examData as any).total_marks || 0),
+        attempt_id: status === "completed" ? attemptId : null,
+        score: status === "completed" ? score : null,
+        status: status || null,
       };
     }));
 
-    console.log("[API/Student/Exams] Fetched exams:", exams.length); // Debugging
-    return NextResponse.json(exams);
+    const filtered = (exams.filter(Boolean) as any[]).sort((a, b) => {
+      const aT = Number(new Date(String((a as any).createdAt || 0)).getTime());
+      const bT = Number(new Date(String((b as any).createdAt || 0)).getTime());
+      return bT - aT;
+    });
+    console.log("[API/Student/Exams] Fetched exams:", filtered.length); // Debugging
+    return NextResponse.json(filtered);
   } catch (error) {
     console.error("[Firebase] Error fetching student exams:", error);
     return NextResponse.json({ error: "Failed to fetch student exams" }, { status: 500 });

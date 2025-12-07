@@ -24,22 +24,43 @@ export default function ResultsPage() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Fetch results data
     const token = localStorage.getItem("auth_token")
     if (!token) {
       router.push("/login")
       return
     }
-
-    // This would fetch from an API endpoint
-    setResult({
-      score: 78,
-      total_marks: 100,
-      percentage: 78,
-      submitted_at: new Date().toISOString(),
-      feedback: "Great job! Keep practicing.",
-    })
-    setLoading(false)
+    async function loadResult() {
+      try {
+        const headers = { Authorization: `Bearer ${token}` }
+        const res = await fetch("/api/student/exams", { headers })
+        if (!res.ok) {
+          setResult(null)
+          setLoading(false)
+          return
+        }
+        const data = await res.json()
+        const p = params as any
+        const examId = String(p.examId || "")
+        const exam = Array.isArray(data) ? data.find((e: any) => String(e.id) === examId) : null
+        if (!exam || !exam.score || !exam.total_marks) {
+          setResult(null)
+          setLoading(false)
+          return
+        }
+        const percentage = Math.round((Number(exam.score) / Number(exam.total_marks)) * 100)
+        setResult({
+          score: Number(exam.score),
+          total_marks: Number(exam.total_marks),
+          percentage,
+          submitted_at: new Date().toISOString(),
+        })
+      } catch {
+        setResult(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadResult()
   }, [router])
 
   if (loading) {

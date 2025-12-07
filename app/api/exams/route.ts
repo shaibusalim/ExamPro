@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, addDoc, doc, getDoc, orderBy, writeBatch } from "firebase/firestore";
+import { collection, query, where, getDocs, doc, getDoc, orderBy } from "firebase/firestore";
+import { firestore } from "@/lib/firebaseAdmin";
 
 export async function GET(request: NextRequest) {
   try {
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     const token = authHeader.replace("Bearer ", "");
     const decoded = verifyToken(token);
 
-    if (!decoded || decoded.role !== "teacher") {
+    if (!decoded || decoded.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -69,7 +70,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.replace("Bearer ", "");
     const decoded = verifyToken(token);
 
-    if (!decoded || decoded.role !== "teacher") {
+    if (!decoded || decoded.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -88,14 +89,13 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    const examDocRef = await addDoc(collection(db, "exams"), newExam);
+    const examDocRef = await firestore.collection("exams").add(newExam);
     const examId = examDocRef.id;
 
-    // Add questions to exam as a subcollection
     if (questions && Array.isArray(questions)) {
-      const batch = writeBatch(db); // Use a batch for multiple writes
+      const batch = firestore.batch();
       questions.forEach((question, index) => {
-        const questionRef = doc(collection(db, "exams", examId, "questions")); // Subcollection
+        const questionRef = firestore.collection("exams").doc(examId).collection("questions").doc();
         batch.set(questionRef, {
           questionId: question.id,
           orderNumber: index + 1,
@@ -109,5 +109,33 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error("[Firebase] Error creating exam:", error);
     return NextResponse.json({ error: "Failed to create exam" }, { status: 500 });
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get("authorization");
+    if (!authHeader) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const decoded = verifyToken(token);
+
+    if (!decoded || decoded.role !== "admin") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { examId, status } = await request.json();
+    const allowed = ["draft", "published", "active", "closed"];
+    if (!examId || !allowed.includes(status)) {
+      return NextResponse.json({ error: "Invalid examId or status" }, { status: 400 });
+    }
+
+    await firestore.collection("exams").doc(examId).update({ status });
+    return NextResponse.json({ ok: true });
+  } catch (error) {
+    console.error("[Firebase] Error updating exam status:", error);
+    return NextResponse.json({ error: "Failed to update exam status" }, { status: 500 });
   }
 }

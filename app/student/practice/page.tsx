@@ -1,5 +1,7 @@
 "use client"
 
+import type React from "react"
+
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
@@ -8,7 +10,8 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group"
 import { Label } from "@/components/ui/label"
 import { StudentNav } from "@/components/student-nav"
 import { Spinner } from "@/components/ui/spinner"
-import { Textarea } from "@/components/ui/textarea" // Import Textarea
+import { Textarea } from "@/components/ui/textarea"
+import { CheckCircle2, BookOpen, TrendingUp } from "lucide-react"
 
 interface Topic {
   id: string
@@ -16,27 +19,27 @@ interface Topic {
   description: string
   learning_outcomes: string
   class_level: string
-  weekNumber: number; // Added weekNumber
+  weekNumber: number
 }
 
 interface UserProfile {
   fullName: string
   classLevel?: string
-  studentId?: string // This can be the "code"
+  studentId?: string
 }
 
 interface Question {
   id: string
-  questionText: string // Changed from question_text
-  questionType: 'mcq' | 'true_false' | 'fill_blank' | 'essay'; // Changed from question_type, added literal types
+  questionText: string
+  questionType: "mcq" | "true_false" | "fill_blank" | "essay"
   marks: number
-  options: Array<{ text: string; isCorrect: boolean }> // Removed 'id' from option since Gemini might not provide
-  correctAnswer?: string // For MCQs, True/False
+  options: Array<{ text: string; isCorrect: boolean }>
+  correctAnswer?: string
   explanation?: string
 }
 
 interface PracticeState {
-  topic: Topic // Topic will always be present once practice is set
+  topic: Topic
   questions: Question[]
   currentIndex: number
   selectedAnswers: Record<string, string>
@@ -48,7 +51,7 @@ export default function PracticePage() {
   const [topics, setTopics] = useState<Topic[]>([])
   const [practice, setPractice] = useState<PracticeState | null>(null)
   const [loading, setLoading] = useState(true)
-  const [userClassLevel, setUserClassLevel] = useState<string>(""); // New state for user's class level
+  const [userClassLevel, setUserClassLevel] = useState<string>("")
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
@@ -58,70 +61,54 @@ export default function PracticePage() {
     }
 
     const fetchPracticeData = async () => {
-      setLoading(true);
+      setLoading(true)
       try {
-        const headers = { Authorization: `Bearer ${token}` };
+        const headers = { Authorization: `Bearer ${token}` }
 
-        // 1. Fetch user profile to get classLevel
-        const profileRes = await fetch("/api/profile", { headers });
+        const profileRes = await fetch("/api/profile", { headers })
         if (profileRes.ok) {
-          const profileData: UserProfile = await profileRes.json();
-          setUserClassLevel(profileData.classLevel || ""); // Set the user's class level
-          console.log("[PracticePage] User profile fetched:", profileData); // Debugging
+          const profileData: UserProfile = await profileRes.json()
+          setUserClassLevel(profileData.classLevel || "")
         } else {
-          console.error("[PracticePage] Failed to fetch user profile:", profileRes.status, profileRes.statusText);
-          setUserClassLevel("B7"); // Default to B7 if profile fetch fails
+          setUserClassLevel("B7")
         }
 
-        // 2. Fetch topics, using the user's class level if available, otherwise default
-        const levelToFetch = userClassLevel || "B7"; // Use fetched level or default
-        console.log(`[PracticePage] Fetching topics for class level: ${levelToFetch}`); // Debugging
-
-        const topicsRes = await fetch(`/api/topics?level=${levelToFetch}`, { headers });
+        const levelToFetch = userClassLevel || "B7"
+        const topicsRes = await fetch(`/api/topics?level=${levelToFetch}`, { headers })
         if (!topicsRes.ok) {
-          console.error("[PracticePage] Failed to fetch topics. Status:", topicsRes.status, topicsRes.statusText);
-          setTopics([]);
+          setTopics([])
         } else {
-          const data = await topicsRes.json();
+          const data = await topicsRes.json()
           if (Array.isArray(data)) {
             const sortedTopics = (data as Topic[]).sort((a, b) => {
-              const weekA = a.weekNumber !== undefined && a.weekNumber !== null ? a.weekNumber : Infinity;
-              const weekB = b.weekNumber !== undefined && b.weekNumber !== null ? b.weekNumber : Infinity;
-
+              const weekA =
+                a.weekNumber !== undefined && a.weekNumber !== null ? a.weekNumber : Number.POSITIVE_INFINITY
+              const weekB =
+                b.weekNumber !== undefined && b.weekNumber !== null ? b.weekNumber : Number.POSITIVE_INFINITY
               if (weekA === weekB) {
-                return a.title.localeCompare(b.title);
+                return a.title.localeCompare(b.title)
               }
-              return weekA - weekB;
-            });
-            setTopics(sortedTopics);
-            console.log("[PracticePage] Fetched topics:", sortedTopics); // Debugging
+              return weekA - weekB
+            })
+            setTopics(sortedTopics)
           } else {
-            console.error("[PracticePage] Failed to fetch topics: Data is not an array.", data);
-            setTopics([]);
+            setTopics([])
           }
         }
       } catch (err) {
-        console.error("[PracticePage] Error during data fetching in PracticePage:", err);
-        setTopics([]);
+        console.error("[PracticePage] Error during data fetching:", err)
+        setTopics([])
       } finally {
-        setLoading(false);
+        setLoading(false)
       }
-    };
+    }
 
-    fetchPracticeData();
-  }, [router, userClassLevel]); // userClassLevel as dependency
+    fetchPracticeData()
+  }, [router, userClassLevel])
 
   async function startPractice(topic: Topic) {
-    console.log("[PracticePage] Starting practice for topic:", topic); // Debugging
-    setLoading(true);
+    setLoading(true)
     try {
-      // Use AI to generate questions for the selected topic
-      console.log("[PracticePage] Sending to /api/generate-questions:", {
-        topicTitle: topic.title,
-        classLevel: topic.class_level,
-        numberOfQuestions: 5,
-        questionType: "mcq",
-      }); // Debugging
       const generateQuestionsRes = await fetch("/api/generate-questions", {
         method: "POST",
         headers: {
@@ -131,38 +118,30 @@ export default function PracticePage() {
         body: JSON.stringify({
           topicTitle: topic.title,
           classLevel: topic.class_level,
-          numberOfQuestions: 5, // Default number of questions
-          questionType: "mcq", // Default question type (e.g., 'mcq', 'true_false', 'short_answer')
+          numberOfQuestions: 5,
+          questionType: "mcq",
         }),
-      });
+      })
 
       if (!generateQuestionsRes.ok) {
-        console.error("Failed to generate AI questions. Status:", generateQuestionsRes.status, generateQuestionsRes.statusText);
-        // Set an error message for the user if AI generation fails
-        // setError("Failed to generate questions. Please try again."); // Need to add error state
-        return; // Exit if AI generation failed
+        return
       }
 
-      const { generatedQuestions } = await generateQuestionsRes.json();
-      console.log("[PracticePage] Generated questions:", generatedQuestions); // Debugging
+      const { generatedQuestions } = await generateQuestionsRes.json()
 
       if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
-        console.warn("AI generated no questions for this topic:", topic.title);
-        // Set a message for the user if no questions were generated
-        // setError("No questions generated by AI for this topic. Please try another."); // Need to add error state
-        return;
+        return
       }
 
-      // Format generated questions to match existing Question interface
       const formattedQuestions: Question[] = generatedQuestions.map((q: any) => ({
-        id: q.id || Math.random().toString(36).substr(2, 9), // Assign a temporary ID if not provided by AI
+        id: q.id || Math.random().toString(36).substr(2, 9),
         questionText: q.questionText,
         questionType: q.questionType,
         marks: q.marks || 1,
         options: q.options || [],
         correctAnswer: q.correctAnswer,
         explanation: q.explanation,
-      }));
+      }))
 
       setPractice({
         topic,
@@ -170,80 +149,147 @@ export default function PracticePage() {
         currentIndex: 0,
         selectedAnswers: {},
         submitted: false,
-      });
+      })
     } catch (err) {
-      console.error("Error during AI question generation for practice:", err);
-      // setError("An unexpected error occurred during question generation."); // Need to add error state
+      console.error("Error during AI question generation:", err)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
   }
 
   if (!practice) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
         <StudentNav />
 
         <main className="max-w-7xl mx-auto px-4 py-12">
-          <div className="mb-12">
-            <h1 className="text-4xl font-bold">Practice Questions</h1>
-            <p className="text-muted-foreground mt-2">Improve your skills with practice questions</p>
+          <div className="mb-12 animate-fade-in">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                <BookOpen className="w-6 h-6 text-primary-foreground" />
+              </div>
+              <h1 className="text-4xl font-bold text-balance">Practice Questions</h1>
+            </div>
+            <p className="text-muted-foreground mt-2 text-lg">
+              Strengthen your understanding with interactive practice
+            </p>
           </div>
 
           {loading ? (
-            <div className="flex justify-center">
+            <div className="flex justify-center items-center h-64">
               <Spinner />
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 gap-6">
-              {topics.map((topic) => (
-                <Card key={topic.id} className="p-6 hover:shadow-lg transition-shadow">
-                  <h3 className="text-lg font-semibold mb-2">{topic.title}</h3>
-                  <p className="text-sm text-muted-foreground mb-4">{topic.description}</p>
-                  <Button onClick={() => startPractice(topic)} className="w-full">
-                    Start Practice
-                  </Button>
-                </Card>
-              ))}
-            </div>
+            <>
+              <div className="grid md:grid-cols-2 gap-6">
+                {topics.map((topic, index) => (
+                  <Card
+                    key={topic.id}
+                    className="p-6 hover:shadow-xl transition-all duration-300 cursor-pointer group border border-border/50 hover:border-primary/30 animate-slide-up-1 hover:scale-105 hover:translate-y-[-4px]"
+                    style={{
+                      animationDelay: `${index * 100}ms`,
+                    }}
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold mb-2 text-foreground group-hover:text-primary transition-colors">
+                          {topic.title}
+                        </h3>
+                        <p className="text-sm text-muted-foreground line-clamp-2">{topic.description}</p>
+                      </div>
+                      <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center ml-3">
+                        <TrendingUp className="w-4 h-4 text-accent" />
+                      </div>
+                    </div>
+
+                    {topic.learning_outcomes && (
+                      <div className="mb-4 p-3 rounded-lg bg-muted/50 border border-border/30">
+                        <p className="text-xs font-medium text-muted-foreground">Learning Outcomes</p>
+                        <p className="text-sm text-foreground line-clamp-2 mt-1">{topic.learning_outcomes}</p>
+                      </div>
+                    )}
+
+                    <Button
+                      onClick={() => startPractice(topic)}
+                      className="w-full bg-gradient-to-r from-primary to-primary/80 hover:from-primary hover:to-primary text-primary-foreground font-semibold shadow-md hover:shadow-lg transition-all duration-300 group/btn"
+                    >
+                      <span className="group-hover/btn:translate-x-1 transition-transform">Start Practice</span>
+                    </Button>
+                  </Card>
+                ))}
+              </div>
+
+              {topics.length === 0 && (
+                <div className="text-center py-12">
+                  <div className="w-12 h-12 rounded-full bg-muted mx-auto mb-4 flex items-center justify-center">
+                    <BookOpen className="w-6 h-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-muted-foreground">No practice topics available yet</p>
+                </div>
+              )}
+            </>
           )}
         </main>
       </div>
     )
   }
 
-  const question = practice.questions[practice.currentIndex];
-  const allAnswered = Object.keys(practice.selectedAnswers).length === practice.questions.length;
+  const question = practice.questions[practice.currentIndex]
+  const allAnswered = Object.keys(practice.selectedAnswers).length === practice.questions.length
   const score = Object.entries(practice.selectedAnswers).filter(([qId, aId]) => {
-    const q = practice.questions.find((q) => q.id === qId);
-    // For MCQs/True-False, check if the selected option's text matches the correct answer or isCorrect flag
-    if (q?.questionType === 'mcq' || q?.questionType === 'true_false') {
-      const selectedOption = q.options?.find((o) => o.text === aId); // Assuming aId is the option text for display, or option.id
-      return selectedOption?.isCorrect;
+    const q = practice.questions.find((q) => q.id === qId)
+    if (q?.questionType === "mcq" || q?.questionType === "true_false") {
+      const selectedOption = q.options?.find((o) => o.text === aId)
+      return selectedOption?.isCorrect
     }
-    // For other types like 'fill_blank' or 'essay', score checking is more complex and might involve AI or manual grading.
-    // For now, these types won't contribute to 'score' unless explicitly handled.
-    return false;
-  }).length;
+    return false
+  }).length
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
       <StudentNav />
 
       <main className="max-w-4xl mx-auto px-4 py-12">
         {!practice.submitted ? (
           <>
-            <div className="mb-6">
-              <h1 className="text-3xl font-bold mb-2">{practice.topic.title}</h1>
-              <p className="text-sm text-muted-foreground">
-                Question {practice.currentIndex + 1} of {practice.questions.length}
-              </p>
+            <div className="mb-8 animate-fade-in">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <h1 className="text-3xl font-bold mb-1 text-balance">{practice.topic.title}</h1>
+                  <p className="text-muted-foreground">
+                    Question {practice.currentIndex + 1} of {practice.questions.length}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                    {Math.round(((practice.currentIndex + 1) / practice.questions.length) * 100)}%
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-1">Complete</p>
+                </div>
+              </div>
+
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-primary to-accent transition-all duration-500"
+                  style={{
+                    width: `${((practice.currentIndex + 1) / practice.questions.length) * 100}%`,
+                  }}
+                ></div>
+              </div>
             </div>
 
-            <Card className="p-8 space-y-6 mb-6">
-              <h2 className="text-xl font-semibold">{question.questionText}</h2> {/* Changed to questionText */}
+            <Card className="p-8 space-y-6 mb-6 border border-border/50 shadow-lg hover:shadow-xl transition-shadow animate-slide-up-1">
+              <div className="space-y-4">
+                <div className="inline-block px-3 py-1 rounded-full bg-primary/10 border border-primary/30 text-sm text-primary font-medium">
+                  {question.questionType === "mcq"
+                    ? "Multiple Choice"
+                    : question.questionType === "true_false"
+                      ? "True/False"
+                      : "Short Answer"}
+                </div>
+                <h2 className="text-xl font-semibold leading-relaxed text-foreground">{question.questionText}</h2>
+              </div>
 
-              {/* Render question types dynamically */}
               {question.questionType === "mcq" || question.questionType === "true_false" ? (
                 <RadioGroup
                   value={practice.selectedAnswers[question.id] || ""}
@@ -254,14 +300,21 @@ export default function PracticePage() {
                         ...practice.selectedAnswers,
                         [question.id]: value,
                       },
-                    });
+                    })
                   }}
                 >
-                  <div className="space-y-3">
-                    {question.options?.map((option) => ( // Use optional chaining for options
-                      <div key={option.text} className="flex items-center space-x-2"> {/* Key by text or generate id */}
+                  <div className="space-y-3 mt-6">
+                    {question.options?.map((option, idx) => (
+                      <div
+                        key={option.text}
+                        className={`flex items-center space-x-3 p-4 rounded-lg border-2 transition-all cursor-pointer ${
+                          practice.selectedAnswers[question.id] === option.text
+                            ? "border-primary bg-primary/5"
+                            : "border-border hover:border-primary/50 bg-muted/30 hover:bg-muted/50"
+                        }`}
+                      >
                         <RadioGroupItem value={option.text} id={option.text} />
-                        <Label htmlFor={option.text} className="cursor-pointer">
+                        <Label htmlFor={option.text} className="cursor-pointer flex-1 font-medium">
                           {option.text}
                         </Label>
                       </div>
@@ -272,7 +325,7 @@ export default function PracticePage() {
                 <Textarea
                   placeholder="Your answer here..."
                   value={practice.selectedAnswers[question.id] || ""}
-                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => // Explicitly type event
+                  onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                     setPractice({
                       ...practice,
                       selectedAnswers: {
@@ -282,45 +335,85 @@ export default function PracticePage() {
                     })
                   }
                   rows={4}
+                  className="mt-6 border-2 focus:border-primary"
                 />
               ) : (
                 <p className="text-muted-foreground">Unsupported question type.</p>
               )}
-              <div className="flex justify-between pt-6 border-t">
+
+              <div className="flex justify-between gap-4 pt-6 border-t border-border/50">
                 <Button
                   variant="outline"
                   onClick={() => setPractice({ ...practice, currentIndex: Math.max(0, practice.currentIndex - 1) })}
                   disabled={practice.currentIndex === 0}
+                  className="flex-1 hover:bg-muted/50"
                 >
-                  Previous
+                  ← Previous
                 </Button>
 
                 {practice.currentIndex === practice.questions.length - 1 ? (
                   <Button
                     onClick={() => setPractice({ ...practice, submitted: true })}
-                    className="bg-green-600 hover:bg-green-700"
                     disabled={!allAnswered}
+                    className="flex-1 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-semibold shadow-md hover:shadow-lg disabled:opacity-50"
                   >
                     Submit Practice
                   </Button>
                 ) : (
-                  <Button onClick={() => setPractice({ ...practice, currentIndex: practice.currentIndex + 1 })}>
-                    Next
+                  <Button
+                    onClick={() => setPractice({ ...practice, currentIndex: practice.currentIndex + 1 })}
+                    className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary hover:to-primary text-primary-foreground font-semibold"
+                  >
+                    Next →
                   </Button>
                 )}
               </div>
             </Card>
           </>
         ) : (
-          <Card className="p-12 text-center space-y-6">
-            <h2 className="text-3xl font-bold">Practice Complete!</h2>
-            <div className="text-5xl font-bold text-primary">
-              {Math.round((score / practice.questions.length) * 100)}%
+          <Card className="p-12 text-center space-y-8 border border-border/50 shadow-xl animate-slide-up-1">
+            <div className="space-y-4">
+              <div className="w-16 h-16 rounded-full bg-gradient-to-br from-green-400 to-green-600 flex items-center justify-center mx-auto shadow-lg">
+                <CheckCircle2 className="w-8 h-8 text-white" />
+              </div>
+              <h2 className="text-3xl font-bold text-foreground">Practice Complete!</h2>
+              <p className="text-muted-foreground text-lg">Great job finishing all the questions</p>
             </div>
-            <p className="text-lg">
-              You got {score} out of {practice.questions.length} correct
-            </p>
-            <Button onClick={() => setPractice(null)}>Back to Topics</Button>
+
+            <div className="space-y-3">
+              <div className="text-6xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                {Math.round((score / practice.questions.length) * 100)}%
+              </div>
+              <p className="text-lg text-muted-foreground">
+                You got <span className="font-bold text-foreground">{score}</span> out of{" "}
+                <span className="font-bold text-foreground">{practice.questions.length}</span> correct
+              </p>
+
+              <div className="mt-6 p-4 rounded-lg bg-muted/50 border border-border/30">
+                <p className="text-sm font-medium text-muted-foreground mb-2">Performance</p>
+                <p className="text-foreground">
+                  {score / practice.questions.length >= 0.8
+                    ? "Excellent work! You have a strong grasp of this topic."
+                    : score / practice.questions.length >= 0.6
+                      ? "Good effort! Review the missed questions to improve."
+                      : "Keep practicing! This topic needs more review."}
+                </p>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <Button onClick={() => setPractice(null)} variant="outline" className="flex-1 hover:bg-muted/50">
+                Back to Topics
+              </Button>
+              <Button
+                onClick={() => {
+                  router.push("/dashboard")
+                }}
+                className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary hover:to-primary text-primary-foreground font-semibold"
+              >
+                Go to Dashboard
+              </Button>
+            </div>
           </Card>
         )}
       </main>

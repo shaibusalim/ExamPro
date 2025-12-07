@@ -3,9 +3,25 @@
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, CheckCircle2, Sparkles, BarChart3 } from "lucide-react"
-import { AnimatedGrid } from "./hero-animations"
+import { useState, useEffect } from "react"
+import { AnimatedGrid, TypewriterText } from "./hero-animations"
 
 export function HeroSection() {
+  const rotatingTexts = [
+    "Master Computing with Confidence",
+    "Excel in Your Exams",
+    "Boost Your Knowledge",
+    "Achieve Academic Excellence",
+  ]
+  const [currentTextIndex, setCurrentTextIndex] = useState(0)
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTextIndex((prevIndex) => (prevIndex + 1) % rotatingTexts.length)
+    }, 4000) // Change text every 4 seconds
+    return () => clearInterval(interval)
+  }, [rotatingTexts.length])
+
   return (
     <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 space-y-12 overflow-hidden">
       <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
@@ -20,7 +36,7 @@ export function HeroSection() {
           {/* Main Headline */}
           <div className="space-y-4">
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-balance leading-tight">
-              Master Computing <span className="gradient-text inline-block animate-pulse-glow">with Confidence</span>
+              <TypewriterText key={currentTextIndex} text={rotatingTexts[currentTextIndex]} className="gradient-text" />
             </h1>
             <div className="h-1 w-24 bg-gradient-to-r from-primary to-secondary rounded-full animate-slide-in-left"></div>
           </div>

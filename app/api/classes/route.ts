@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, addDoc, orderBy } from "firebase/firestore";
+import { firestore } from "@/lib/firebaseAdmin";
 
 export async function GET(request: NextRequest) {
   try {
@@ -16,33 +15,53 @@ export async function GET(request: NextRequest) {
     console.log("[API/Classes] Token extracted, verifying..."); // Debugging
     const decoded = verifyToken(token);
 
-    if (!decoded || decoded.role !== "teacher") {
+    if (!decoded || decoded.role !== "admin") {
       console.log("[API/Classes] Unauthorized: Token verification failed or not a teacher."); // Debugging
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const teacherId = decoded.userId;
-    console.log("[API/Classes] Teacher ID:", teacherId); // Debugging
+    console.log("[API/Classes] Admin ID:", teacherId); // Debugging
 
-    const classesRef = collection(db, "classes");
-    const q = query(classesRef, where("teacherId", "==", teacherId), orderBy("createdAt", "desc"));
-    console.log("[API/Classes] Querying classes for teacher ID:", teacherId); // Debugging
-    const querySnapshot = await getDocs(q);
-    console.log("[API/Classes] Found classes:", querySnapshot.size); // Debugging
+    let classesSnapshot = await firestore
+      .collection("classes")
+      .where("teacherId", "==", teacherId)
+      .orderBy("createdAt", "desc")
+      .get();
 
-    const classes = await Promise.all(querySnapshot.docs.map(async (doc) => {
-      const classData = doc.data();
-      // To get student count, query the 'enrollments' collection
-      const enrollmentsRef = collection(db, "enrollments");
-      const enrollmentQuery = query(enrollmentsRef, where("classId", "==", doc.id));
-      const enrollmentSnapshot = await getDocs(enrollmentQuery);
-      const student_count = enrollmentSnapshot.size;
+    if (classesSnapshot.empty) {
+      console.log("[API/Classes] No classes for this admin. Falling back to all classes");
+      classesSnapshot = await firestore
+        .collection("classes")
+        .orderBy("createdAt", "desc")
+        .limit(25)
+        .get();
 
-      return {
-        id: doc.id,
-        ...classData,
-        student_count,
-      };
+      if (classesSnapshot.empty) {
+        console.log("[API/Classes] Classes collection is empty. Seeding B7/B8.");
+        const seed = [
+          { name: "Basic 7", level: "B7", teacherId: teacherId, description: null, createdAt: new Date().toISOString() },
+          { name: "Basic 8", level: "B8", teacherId: teacherId, description: null, createdAt: new Date().toISOString() },
+        ];
+        for (const s of seed) {
+          await firestore.collection("classes").add(s);
+        }
+        classesSnapshot = await firestore
+          .collection("classes")
+          .orderBy("createdAt", "desc")
+          .limit(25)
+          .get();
+      }
+    }
+
+    const classes = await Promise.all(classesSnapshot.docs.map(async (d) => {
+      const classData = d.data();
+      const enrollmentsSnapshot = await firestore
+        .collection("enrollments")
+        .where("classId", "==", d.id)
+        .get();
+      const student_count = enrollmentsSnapshot.size;
+      return { id: d.id, ...classData, student_count };
     }));
 
     console.log("[API/Classes] Classes prepared:", classes); // Debugging
@@ -63,7 +82,7 @@ export async function POST(request: NextRequest) {
     const token = authHeader.replace("Bearer ", "");
     const decoded = verifyToken(token);
 
-    if (!decoded || decoded.role !== "teacher") {
+    if (!decoded || decoded.role !== "admin") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -76,8 +95,7 @@ export async function POST(request: NextRequest) {
       description: description || null,
       createdAt: new Date().toISOString(),
     };
-
-    const docRef = await addDoc(collection(db, "classes"), newClass);
+    const docRef = await firestore.collection("classes").add(newClass);
 
     return NextResponse.json({ id: docRef.id, ...newClass }, { status: 201 });
   } catch (error) {

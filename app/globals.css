@@ -129,6 +129,26 @@
 
 /* Added custom animations in utilities layer - separated from keyframes */
 @layer utilities {
+
+
+
+.animate-slide-up-1 {
+  animation: slideUp 0.5s ease-out 0.1s backwards;
+}
+
+.animate-slide-up-2 {
+  animation: slideUp 0.5s ease-out 0.2s backwards;
+}
+
+.animate-slide-up-3 {
+  animation: slideUp 0.5s ease-out 0.3s backwards;
+}
+
+/* Smooth transitions */
+.transition-all {
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
   .animate-fade-in {
     animation: fadeIn 0.6s ease-in-out;
   }
@@ -305,4 +325,26 @@
   100% {
     background-position: 0% 50%;
   }
+}
+
+@keyframes typewriter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
+}
+
+.typewriter-char {
+  animation: typewriter 0.05s ease forwards;
+  opacity: 0;
 }

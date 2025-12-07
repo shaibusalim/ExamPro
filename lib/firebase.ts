@@ -1,6 +1,7 @@
-import { initializeApp } from "firebase/app";
+import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
+import { getStorage } from "firebase/storage"; // Added getStorage
 
 // Your web app's Firebase configuration
 // For Firebase JS SDK v7.20.0 and later, measurementId is optional
@@ -14,7 +15,18 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+let app;
+if (!getApps().length) {
+  console.log("[Firebase Init] Initializing Firebase app...");
+  console.log("[Firebase Init] Firebase config: ", firebaseConfig); // Log the config
+  app = initializeApp(firebaseConfig);
+  console.log("[Firebase Init] Firebase app initialized.");
+} else {
+  app = getApp();
+  console.log("[Firebase Init] Firebase app already initialized. Using existing app.");
+}
+
 export const auth = getAuth(app);
 export const db = getFirestore(app);
+export const storage = getStorage(app); // Export Firebase Storage
+console.log("[Firebase Init] Firebase Auth, Firestore, and Storage instances exported.");

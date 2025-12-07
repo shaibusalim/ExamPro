@@ -20,6 +20,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
     }
 
+    // Only students can register via public sign-up
+    if (role !== "student") {
+      return NextResponse.json({ error: "Registration restricted to students" }, { status: 403 })
+    }
+
     // Create user with Firebase Authentication
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
@@ -28,7 +33,7 @@ export async function POST(request: NextRequest) {
     const userData = {
       email: user.email,
       fullName,
-      role,
+      role: "student",
       classLevel: classLevel || null,
       studentId: studentId || null,
       createdAt: new Date().toISOString(),
@@ -39,7 +44,7 @@ export async function POST(request: NextRequest) {
 
     // Generate a session token (if needed for server-side logic, otherwise client-side Firebase session is enough)
     // For now, we'll keep the generateToken but it might need to be adapted or replaced
-    const token = generateToken(user.uid, user.email || '', role); // Adapt generateToken for Firebase user
+    const token = generateToken(user.uid, user.email || '', "student"); // Adapt generateToken for Firebase user
 
     const response = NextResponse.json(
       {

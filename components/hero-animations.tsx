@@ -25,7 +25,7 @@ export function FloatingCard() {
   )
 }
 
-export function TypewriterText({ text }: { text: string }) {
+export function TypewriterText({ text, className }: { text: string; className?: string }) {
   const containerRef = useRef<HTMLSpanElement>(null)
 
   useEffect(() => {
@@ -38,12 +38,11 @@ export function TypewriterText({ text }: { text: string }) {
     letters.forEach((letter, index) => {
       const span = document.createElement("span")
       span.textContent = letter
-      span.style.opacity = "0"
-      span.style.animation = `typewriter 0.05s ease forwards`
+      span.className = `${className || ""} typewriter-char` // Add a new class for styling and animation
       span.style.animationDelay = `${index * 0.05}s`
       container.appendChild(span)
     })
-  }, [text])
+  }, [text, className]) // Add className to dependency array
 
-  return <span ref={containerRef} />
+  return <span ref={containerRef} className={className} />
 }

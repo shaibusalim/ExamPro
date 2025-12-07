@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { db } from "@/lib/firebase";
-import { doc, getDoc, updateDoc, collection, query, where, getDocs, serverTimestamp } from "firebase/firestore";
+import { firestore } from "@/lib/firebaseAdmin";
+import { Timestamp } from "firebase-admin/firestore";
+import { gradeTheoryAnswer } from "@/lib/ai-service";
 
-export async function POST(request: NextRequest, { params }: { params: { examId: string } }) {
+export async function POST(request: NextRequest, context: { params: Promise<{ examId: string }> }) {
   try {
     const authHeader = request.headers.get("authorization");
     if (!authHeader) {
@@ -18,18 +19,18 @@ export async function POST(request: NextRequest, { params }: { params: { examId:
     }
 
     const { attemptId, responses } = await request.json();
-    const examId = params.examId;
+    const { examId } = await context.params;
     const studentId = decoded.userId;
 
     // 1. Get exam attempt
-    const attemptRef = doc(db, "exam_attempts", attemptId);
-    const attemptDoc = await getDoc(attemptRef);
+    const attemptRef = firestore.collection("exam_attempts").doc(attemptId);
+    const attemptDoc = await attemptRef.get();
 
-    if (!attemptDoc.exists() || attemptDoc.data().studentId !== studentId || attemptDoc.data().examId !== examId) {
+    if (!attemptDoc.exists || attemptDoc.data()?.studentId !== studentId || attemptDoc.data()?.examId !== examId) {
       return NextResponse.json({ error: "Attempt not found or unauthorized" }, { status: 404 });
     }
 
-    const attemptData = attemptDoc.data();
+    const attemptData = attemptDoc.data() as any;
     if (attemptData.status === "completed") {
       return NextResponse.json({ error: "Exam already submitted" }, { status: 400 });
     }
@@ -37,42 +38,76 @@ export async function POST(request: NextRequest, { params }: { params: { examId:
     let totalScore = 0;
     let totalPossibleMarks = 0;
     const studentAnswers: { [questionId: string]: any } = {};
+    const topicAggregate: { [topicId: string]: { score: number; total: number } } = {};
 
     for (const response of responses) {
       const questionId = response.questionId;
-      const questionRef = doc(db, "questions", questionId);
-      const questionDoc = await getDoc(questionRef);
+      const questionTopDoc = await firestore.collection("questions").doc(questionId).get();
 
-      if (!questionDoc.exists()) {
-        console.warn(`Question ${questionId} not found during grading.`);
-        continue;
+      let q: any = null;
+      if (questionTopDoc.exists) {
+        q = questionTopDoc.data();
+      } else {
+        // Fallback: fetch from exam subcollection if top-level not present
+        const eqSnap = await firestore
+          .collection("exams")
+          .doc(examId)
+          .collection("questions")
+          .doc(questionId)
+          .get();
+        if (eqSnap.exists) q = eqSnap.data();
+        if (!q) {
+          console.warn(`Question ${questionId} not found during grading.`);
+          continue;
+        }
       }
-
-      const q = questionDoc.data();
       let isCorrect = false;
       let marksAwarded = 0;
-      const questionMarks = q.marks || 1; // Default to 1 mark if not specified
+      const questionMarks = Number(q.marks || 1);
 
       totalPossibleMarks += questionMarks;
 
-      if (q.questionType === "MCQ" || q.questionType === "True/False") {
-        const optionsRef = collection(db, "questions", questionId, "options");
-        const optionsQuery = query(optionsRef, where("optionText", "==", response.selectedOptionText)); // Assuming selectedOptionText is sent
-        const optionsSnapshot = await getDocs(optionsQuery);
-
-        if (!optionsSnapshot.empty) {
-          const selectedOption = optionsSnapshot.docs[0].data();
-          if (selectedOption.isCorrect) {
-            isCorrect = true;
-            marksAwarded = questionMarks; // Award full marks for correct MCQ/TrueFalse
-            totalScore += marksAwarded;
+      const type = String(q.questionType || q.type || q.question_type || "mcq");
+      const topicId = String((q as any).topicId || "");
+      if (type === "MCQ" || type === "mcq" || type === "True/False" || type === "true_false") {
+        const selectedId = response.selectedOptionId || response.selectedOptionText || response.selectedOption || null;
+        if (selectedId) {
+          const optSnap = await firestore.collection("questions").doc(questionId).collection("options").get();
+          const correctOpt = optSnap.docs.find((d) => (d.data() as any).isCorrect === true);
+          if (correctOpt) {
+            const correctId = correctOpt.id;
+            if (String(selectedId) === String(correctId)) {
+              isCorrect = true;
+              marksAwarded = questionMarks;
+              totalScore += marksAwarded;
+            } else {
+              const selectedText = String(response.selectedOptionText || response.selectedOptionId || "").toLowerCase();
+              const correctText = String((correctOpt.data() as any).optionText || "").toLowerCase();
+              if (selectedText && correctText && selectedText === correctText) {
+                isCorrect = true;
+                marksAwarded = questionMarks;
+                totalScore += marksAwarded;
+              } else if (type === "true_false") {
+                const tf = ["true", "false"];
+                if (tf.includes(String(selectedId).toLowerCase())) {
+                  const match = optSnap.docs.find((d) => String((d.data() as any).optionText || "").toLowerCase() === String(selectedId).toLowerCase());
+                  if (match && (match.data() as any).isCorrect === true) {
+                    isCorrect = true;
+                    marksAwarded = questionMarks;
+                    totalScore += marksAwarded;
+                  }
+                }
+              }
+            }
           }
-        }
-      } else if (q.questionType === "Theory") {
-        // For theory questions, marksAwarded is 0 by default, can be graded manually later
-        // Or implement AI grading if desired. For now, it's 0.
-        marksAwarded = 0;
-        // Optionally, store the text response for later manual grading
+      }
+      } else if (type === "Theory" || type === "essay") {
+        const stem = String((q as any).questionText || (q as any).question_text || (q as any).question || "");
+        const correct = String((q as any).correctAnswer || "");
+        const textResp = String(response.textResponse || "");
+        const rawScore = await gradeTheoryAnswer(stem, textResp, correct, 5);
+        marksAwarded = Math.round((rawScore / 5) * questionMarks);
+        totalScore += marksAwarded;
       }
 
       studentAnswers[questionId] = {
@@ -83,18 +118,25 @@ export async function POST(request: NextRequest, { params }: { params: { examId:
         marksAwarded,
         isAnswered: true,
       };
+
+      if (topicId) {
+        const agg = topicAggregate[topicId] || { score: 0, total: 0 };
+        agg.total += questionMarks;
+        agg.score += marksAwarded;
+        topicAggregate[topicId] = agg;
+      }
     }
 
     const percentage = totalPossibleMarks > 0 ? Math.round((totalScore / totalPossibleMarks) * 100) : 0;
 
-    // Update exam attempt with score and answers
-    await updateDoc(attemptRef, {
+    await attemptRef.update({
       status: "completed",
-      submittedAt: serverTimestamp(),
+      submittedAt: Timestamp.now(),
       score: totalScore,
-      totalMarks: totalPossibleMarks, // Total possible marks for the exam
+      totalMarks: totalPossibleMarks,
       percentage,
-      answers: studentAnswers, // Store all student responses
+      answers: studentAnswers,
+      topicScores: topicAggregate,
     });
 
     return NextResponse.json({

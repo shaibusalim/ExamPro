@@ -31,6 +31,8 @@ export interface Question {
   correctAnswer?: string
   explanation?: string
   options?: QuestionOption[]
+  imageUrl?: string // Added imageUrl
+  difficultyLevel?: string // Added difficultyLevel
 }
 
 export interface QuestionOption {
