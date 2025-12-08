@@ -68,8 +68,9 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
       totalPossibleMarks += questionMarks;
 
       const type = String(q.questionType || q.type || q.question_type || "mcq");
+      const typeNorm = type.toLowerCase();
       const topicId = String((q as any).topicId || "");
-      if (type === "MCQ" || type === "mcq" || type === "True/False" || type === "true_false") {
+      if (typeNorm === "mcq" || typeNorm === "true_false") {
         const selectedId = response.selectedOptionId || response.selectedOptionText || response.selectedOption || null;
         if (selectedId) {
           const optSnap = await firestore.collection("questions").doc(questionId).collection("options").get();
@@ -87,7 +88,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
                 isCorrect = true;
                 marksAwarded = questionMarks;
                 totalScore += marksAwarded;
-              } else if (type === "true_false") {
+          } else if (typeNorm === "true_false") {
                 const tf = ["true", "false"];
                 if (tf.includes(String(selectedId).toLowerCase())) {
                   const match = optSnap.docs.find((d) => String((d.data() as any).optionText || "").toLowerCase() === String(selectedId).toLowerCase());
@@ -101,12 +102,26 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
             }
           }
       }
-      } else if (type === "Theory" || type === "essay") {
+      } else if (typeNorm === "theory" || typeNorm === "essay") {
         const stem = String((q as any).questionText || (q as any).question_text || (q as any).question || "");
-        const correct = String((q as any).correctAnswer || "");
+        const correct = String((q as any).correctAnswer || (q as any).explanation || "");
         const textResp = String(response.textResponse || "");
         const rawScore = await gradeTheoryAnswer(stem, textResp, correct, 5);
-        marksAwarded = Math.round((rawScore / 5) * questionMarks);
+        if (questionMarks === 4) {
+          if (rawScore >= 5) {
+            marksAwarded = 4;
+          } else if (rawScore >= 3) {
+            marksAwarded = 3;
+          } else if (rawScore >= 2) {
+            marksAwarded = 2;
+          } else if (rawScore >= 1) {
+            marksAwarded = 1;
+          } else {
+            marksAwarded = 0;
+          }
+        } else {
+          marksAwarded = Math.round((rawScore / 5) * questionMarks);
+        }
         totalScore += marksAwarded;
       }
 

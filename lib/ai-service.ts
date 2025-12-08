@@ -441,12 +441,21 @@ export async function gradeTheoryAnswer(
   }
   const a = String(studentAnswer || '').toLowerCase();
   const b = String(correctAnswer || '').toLowerCase();
-  if (!b) return 0;
   function tokens(s: string) {
     return new Set(s.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean));
   }
+  function keyTokens(s: string) {
+    const stop = new Set([
+      'explain','describe','discuss','difference','differentiate','function','functions','steps','process','using','use','diagram','below','identify','any','three','two','features','benefits','role','how','what','why','and','or','of','in','on','to','the','a','an'
+    ]);
+    const raw = Array.from(tokens(String(s || '').toLowerCase()));
+    return new Set(raw.filter((t) => t.length >= 3 && !stop.has(t)));
+  }
   const ta = tokens(a);
-  const tb = tokens(b);
+  let tb = tokens(b);
+  if (tb.size === 0) {
+    tb = keyTokens(question);
+  }
   let inter = 0;
   tb.forEach((t) => {
     if (ta.has(t)) inter++;

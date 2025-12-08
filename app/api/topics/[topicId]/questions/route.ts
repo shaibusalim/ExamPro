@@ -2,12 +2,12 @@ import { type NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
-export async function GET(request: NextRequest, { params }: { params: { topicId: string } }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ topicId: string }> }) {
   try {
     // Note: The original route did not have token verification.
     // If authentication/authorization is needed for topics, verifyToken should be added.
 
-    const topicId = params.topicId;
+    const { topicId } = await params;
     const limit = parseInt(request.nextUrl.searchParams.get("limit") || "10", 10);
 
     const questionsRef = collection(db, "questions");

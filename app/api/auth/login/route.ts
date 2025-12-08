@@ -25,62 +25,22 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email and password required" }, { status: 400 });
     }
 
-    // Default admin login (bypass Firebase)
-    const adminEmail = process.env.ADMIN_EMAIL || "admin@example.com";
-    const adminPassword = process.env.ADMIN_PASSWORD || "admin123";
-    if (email === adminEmail && password === adminPassword) {
-      const token = generateToken("admin", adminEmail, "admin");
-      const response = NextResponse.json(
-        {
-          message: "Login successful",
-          user: {
-            id: "admin",
-            email: adminEmail,
-            fullName: "System Admin",
-            role: "admin",
-            classLevel: null,
-          },
-          token,
-        },
-        { status: 200 },
-      );
-      response.cookies.set("auth_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 24 * 60 * 60,
-      });
-      return response;
-    }
-
-    if (process.env.NODE_ENV !== "production") {
-      try {
-        const fallbackEmail = String(email || "").toLowerCase();
-        const qSnap = await adminFirestore.collection("users").where("email", "==", fallbackEmail).get();
-        let existingUserDoc = qSnap.empty ? null : qSnap.docs[0];
-        let userId: string;
-        if (existingUserDoc) {
-          userId = existingUserDoc.id;
-        } else {
-          const newDoc = await adminFirestore.collection("users").add({
-            email: fallbackEmail,
-            fullName: fallbackEmail.split("@")[0],
-            role: "student",
-            classLevel: "B7",
-            createdAt: new Date().toISOString(),
-          });
-          userId = newDoc.id;
-        }
-        const token = generateToken(userId, fallbackEmail, "student");
+    // Optional admin bypass only when explicitly enabled
+    const allowBypass = String(process.env.ALLOW_ADMIN_BYPASS || "false").toLowerCase() === "true";
+    if (allowBypass) {
+      const adminEmail = process.env.ADMIN_EMAIL || "";
+      const adminPassword = process.env.ADMIN_PASSWORD || "";
+      if (adminEmail && adminPassword && email === adminEmail && password === adminPassword) {
+        const token = generateToken("admin", adminEmail, "admin");
         const response = NextResponse.json(
           {
             message: "Login successful",
             user: {
-              id: userId,
-              email: fallbackEmail,
-              fullName: fallbackEmail.split("@")[0],
-              role: "student",
-              classLevel: "B7",
+              id: "admin",
+              email: adminEmail,
+              fullName: "System Admin",
+              role: "admin",
+              classLevel: null,
             },
             token,
           },
@@ -93,8 +53,10 @@ export async function POST(request: NextRequest) {
           maxAge: 24 * 60 * 60,
         });
         return response;
-      } catch {}
+      }
     }
+
+    // Dev auto-user creation is disabled by default for security
 
     const userCredential = await signInWithEmailAndPassword(auth, email, password);
     const firebaseUser = userCredential.user;
@@ -160,65 +122,14 @@ export async function POST(request: NextRequest) {
     let errorMessage = "Login failed. Please try again.";
 
     // Handle specific Firebase auth errors
-    if (error.code === "auth/invalid-email" || error.code === "auth/user-not-found" || error.code === "auth/wrong-password") {
+    if (error.code === "auth/invalid-email" || error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") {
       errorMessage = "Invalid email or password.";
     } else if (error.code) {
       errorMessage = error.message;
     }
 
-    if (process.env.NODE_ENV !== "production") {
-      try {
-        const { email, password } = await request.json();
-        const fallbackEmail = String(email || "").toLowerCase();
-        if (!fallbackEmail) {
-          return NextResponse.json({ error: errorMessage }, { status: 500 });
-        }
-        let existingUserDoc: FirebaseFirestore.QueryDocumentSnapshot | null = null;
-        const qSnap = await firestore.collection("users").where("email", "==", fallbackEmail).get();
-        if (!qSnap.empty) {
-          existingUserDoc = qSnap.docs[0];
-        }
-        let userId = existingUserDoc?.id || undefined;
-        let fullName = existingUserDoc ? String((existingUserDoc.data() as any).fullName || "") : fallbackEmail.split("@")[0];
-        let role = existingUserDoc ? String((existingUserDoc.data() as any).role || "student") : "student";
-        let classLevel = existingUserDoc ? String((existingUserDoc.data() as any).classLevel || "B7") : "B7";
-        if (!userId) {
-          const docRef = await firestore.collection("users").add({
-            email: fallbackEmail,
-            fullName,
-            role,
-            classLevel,
-            createdAt: new Date().toISOString(),
-          } as any);
-          userId = docRef.id;
-        }
-        const token = generateToken(userId, fallbackEmail, role);
-        const response = NextResponse.json(
-          {
-            message: "Login successful (dev mode)",
-            user: {
-              id: userId,
-              email: fallbackEmail,
-              fullName,
-              role,
-              classLevel,
-            },
-            token,
-          },
-          { status: 200 },
-        );
-        response.cookies.set("auth_token", token, {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          sameSite: "lax",
-          maxAge: 24 * 60 * 60,
-        });
-        return response;
-      } catch (fallbackErr) {
-        console.error("[Login Fallback] Error:", fallbackErr);
-      }
-    }
-
-    return NextResponse.json({ error: errorMessage }, { status: 500 });
+    // Dev auto-user fallback removed; return proper error codes
+    const status = (error.code === "auth/invalid-email" || error.code === "auth/user-not-found" || error.code === "auth/wrong-password" || error.code === "auth/invalid-credential") ? 401 : 500;
+    return NextResponse.json({ error: errorMessage }, { status })
   }
 }

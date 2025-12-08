@@ -223,7 +223,6 @@ export default function AnalyticsPage() {
                   cy="50%"
                   outerRadius={80}
                   label={({ payload }) => `${payload.fullName}: ${payload.averageScore?.toFixed(0)}%`}
-                  labelStyle={{ fill: "#e2e8f0", fontSize: "12px" }}
                 >
                   {analytics.studentPerformance.slice(0, 5).map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />

@@ -35,8 +35,8 @@ export async function POST(req: NextRequest) {
     const batch = firestore.batch();
     const questionIds: string[] = [];
 
-    for (const q of questions as Question[]) {
-      const typeRaw = (q.questionType || '').toLowerCase()
+    for (const q of questions as any[]) {
+      const typeRaw = String(q.questionType || q.type || '').toLowerCase()
       const typeMap: Record<string, string> = {
         objective: 'mcq',
         theory: 'essay',
@@ -49,30 +49,74 @@ export async function POST(req: NextRequest) {
       const qRef = firestore.collection("questions").doc();
       questionIds.push(qRef.id);
 
+      const questionText: string = String(q.questionText ?? q.question ?? q.stem ?? '').trim();
+      if (!questionText) {
+        // Skip invalid entries rather than failing the entire batch
+        console.warn('[Bulk] Skipping question with missing text');
+        continue;
+      }
+
+      const rawAnswer = q.correctAnswer ?? q.explanation ?? q.answer ?? null;
+      const correctAnswer: string | null = typeof rawAnswer === 'string' ? rawAnswer : null;
+      const marks: number = typeof q.marks === 'number' ? q.marks : (normalizedType === 'essay' ? 4 : 1);
+
       batch.set(qRef, {
         topicId: topicIds[0], // assign first topic
-        questionText: q.questionText,
+        questionText,
         questionType: normalizedType,
-        marks: q.marks || 1,
-        correctAnswer: q.correctAnswer || null,
-        explanation: q.explanation || null,
-        imageUrl: q.imageUrl || null,
+        marks,
+        correctAnswer: correctAnswer ?? null,
+        explanation: typeof q.explanation === 'string' ? q.explanation : null,
+        imageUrl: typeof q.imageUrl === 'string' ? q.imageUrl : null,
         classLevel,
         createdAt: new Date(),
       });
 
       // If multiple-choice options exist
       if (normalizedType === 'mcq' || normalizedType === 'true_false') {
-        const opts = Array.isArray(q.options) ? q.options : []
+        const rawOpts = Array.isArray(q.options) ? q.options : [];
+        let opts: { text: string; isCorrect: boolean }[] = [];
+        if (rawOpts.length > 0) {
+          if (typeof rawOpts[0] === 'string') {
+            const optStrings = rawOpts as string[];
+            let correctIndex: number | null = null;
+            if (typeof correctAnswer === 'string') {
+              const ans = correctAnswer.trim().toLowerCase();
+              const letters = ['a', 'b', 'c', 'd'];
+              if (letters.includes(ans)) {
+                correctIndex = letters.indexOf(ans);
+              } else if (/^[1-9]\d*$/.test(ans)) {
+                const n = parseInt(ans, 10);
+                if (n >= 1 && n <= optStrings.length) correctIndex = n - 1;
+              } else {
+                const idx = optStrings.findIndex((t) => String(t).toLowerCase() === ans);
+                if (idx >= 0) correctIndex = idx;
+              }
+            }
+            opts = optStrings.map((t: string, idx: number) => ({
+              text: t,
+              isCorrect: correctIndex !== null ? idx === correctIndex : false,
+            }));
+          } else {
+            opts = rawOpts.map((o: any) => ({ text: String(o.text || o.optionText || ''), isCorrect: !!o.isCorrect }));
+            // If none marked correct but we have an answerText, mark match
+            if (!opts.some((o) => o.isCorrect) && typeof correctAnswer === 'string') {
+              const ans = correctAnswer.toLowerCase();
+              opts = opts.map((o) => ({ ...o, isCorrect: o.text.toLowerCase() === ans }));
+            }
+          }
+        }
         if (opts.length > 0) {
-        q.options.forEach((opt, idx) => {
-          const optionRef = firestore.collection("questions").doc(qRef.id).collection("options").doc();
-          batch.set(optionRef, {
-            optionText: opt.text,
-            optionOrder: idx + 1,
-            isCorrect: opt.isCorrect,
+          opts.forEach((opt, idx) => {
+            const optionRef = firestore.collection('questions').doc(qRef.id).collection('options').doc();
+            batch.set(optionRef, {
+              optionText: opt.text,
+              optionOrder: idx + 1,
+              isCorrect: !!opt.isCorrect,
+            });
           });
-        });
+          // Also store plain options for display convenience
+          batch.update(qRef, { options: opts.map((o) => o.text) });
         }
       }
     }

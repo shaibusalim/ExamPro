@@ -103,7 +103,7 @@ export async function GET(request: NextRequest) {
     console.log("[API/Questions] Topic ID (if any):", topicId);
     console.log("[API/Questions] Class Level (if any):", classLevel); // ADD THIS
 
-    let base = firestore.collection("questions");
+    let base: FirebaseFirestore.Query<FirebaseFirestore.DocumentData> = firestore.collection("questions");
     if (topicId) {
       base = base.where("topicId", "==", topicId);
       console.log("[API/Questions] Filtering by Topic ID:", topicId);

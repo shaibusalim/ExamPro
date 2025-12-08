@@ -1,4 +1,4 @@
-import { sql } from "../lib/db";
+import { db } from "../lib/db";
 import fs from "fs";
 import path from "path";
 async function runMigrations() {
@@ -27,7 +27,8 @@ async function runMigrations() {
 
       for (const command of commands) {
         if (command) {
-          await sql.query(command);
+          // No-op for Firestore-based app
+          await Promise.resolve();
         }
       }
       console.log(`Successfully executed ${file}`);

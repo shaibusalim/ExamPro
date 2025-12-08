@@ -82,6 +82,9 @@ export async function GET(request: NextRequest) {
       let attemptId = null;
       let score = null;
       let status: string | null = null;
+      let attemptTotalMarks: number | null = null;
+      let attemptPercentage: number | null = null;
+      let attemptSubmittedAt: string | null = null;
       const attemptSnapshot = await firestore
         .collection("exam_attempts")
         .where("examId", "==", examDoc.id)
@@ -93,6 +96,9 @@ export async function GET(request: NextRequest) {
         attemptId = attemptSnapshot.docs[0].id;
         score = attemptData.score ?? null;
         status = String(attemptData.status || "");
+        attemptTotalMarks = typeof attemptData.totalMarks === 'number' ? attemptData.totalMarks : null;
+        attemptPercentage = typeof attemptData.percentage === 'number' ? attemptData.percentage : null;
+        attemptSubmittedAt = attemptData.submittedAt ? String((attemptData.submittedAt as any).toDate?.() || attemptData.submittedAt) : null;
       }
 
       return {
@@ -104,6 +110,9 @@ export async function GET(request: NextRequest) {
         attempt_id: status === "completed" ? attemptId : null,
         score: status === "completed" ? score : null,
         status: status || null,
+        attempt_total_marks: status === "completed" ? attemptTotalMarks : null,
+        attempt_percentage: status === "completed" ? attemptPercentage : null,
+        attempt_submitted_at: status === "completed" ? attemptSubmittedAt : null,
       };
     }));
 

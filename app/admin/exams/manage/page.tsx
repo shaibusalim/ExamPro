@@ -70,6 +70,15 @@ export default function AdminManageExamsPage() {
     setExams((prev) => prev.map((exam) => (exam.id === examId ? { ...exam, locked: lock } : exam)))
   }
 
+  async function refetchExams() {
+    const token = localStorage.getItem("auth_token") || ""
+    const res = await fetch("/api/admin/exams", { headers: { Authorization: `Bearer ${token}` } })
+    if (res.ok) {
+      const data = await res.json()
+      setExams(Array.isArray(data) ? data : [])
+    }
+  }
+
   if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -176,6 +185,22 @@ export default function AdminManageExamsPage() {
                       Publish
                     </Button>
                   )}
+                  <Button
+                    onClick={async () => {
+                      if (!window.confirm("Delete this exam? This cannot be undone.")) return
+                      const token = localStorage.getItem("auth_token") || ""
+                      const res = await fetch(`/api/admin/exams/${exam.id}`, {
+                        method: "DELETE",
+                        headers: { Authorization: `Bearer ${token}` },
+                      })
+                      if (res.ok) {
+                        await refetchExams()
+                      }
+                    }}
+                    className="bg-red-600 hover:bg-red-700 text-white"
+                  >
+                    Delete
+                  </Button>
                   </div>
                 </div>
               </Card>

@@ -28,6 +28,7 @@ interface StudentProfile {
   classLevel?: string
   studentId?: string
   lockedExams?: boolean
+  lockedDashboard?: boolean
 }
 
 interface StudentAnalytics {

@@ -32,28 +32,46 @@ export default function ResultsPage() {
     async function loadResult() {
       try {
         const headers = { Authorization: `Bearer ${token}` }
-        const res = await fetch("/api/student/exams", { headers })
-        if (!res.ok) {
-          setResult(null)
-          setLoading(false)
-          return
-        }
-        const data = await res.json()
         const p = params as any
         const examId = String(p.examId || "")
-        const exam = Array.isArray(data) ? data.find((e: any) => String(e.id) === examId) : null
-        if (!exam || !exam.score || !exam.total_marks) {
-          setResult(null)
-          setLoading(false)
-          return
+        // Primary: fetch direct attempt result
+        const r1 = await fetch(`/api/student/exam/${examId}/result`, { headers })
+        if (r1.ok) {
+          const data = await r1.json()
+          setResult({
+            score: Number(data.score || 0),
+            total_marks: Number(data.total_marks || 0),
+            percentage: Number(data.percentage || 0),
+            submitted_at: String(data.submitted_at || new Date().toISOString()),
+          })
+        } else {
+          // Fallback: find in exams list
+          const res = await fetch("/api/student/exams", { headers })
+          if (!res.ok) {
+            setResult(null)
+            setLoading(false)
+            return
+          }
+          const list = await res.json()
+          const exam = Array.isArray(list) ? list.find((e: any) => String(e.id) === examId) : null
+          if (!exam || exam.score === null || exam.score === undefined) {
+            setResult(null)
+            setLoading(false)
+            return
+          }
+          const totalMarks = typeof exam.attempt_total_marks === 'number' && exam.attempt_total_marks > 0
+            ? Number(exam.attempt_total_marks)
+            : Number(exam.total_marks || 0)
+          const percentage = typeof exam.attempt_percentage === 'number'
+            ? Math.round(Number(exam.attempt_percentage))
+            : (totalMarks > 0 ? Math.round((Number(exam.score) / totalMarks) * 100) : 0)
+          setResult({
+            score: Number(exam.score),
+            total_marks: totalMarks,
+            percentage,
+            submitted_at: String(exam.attempt_submitted_at || new Date().toISOString()),
+          })
         }
-        const percentage = Math.round((Number(exam.score) / Number(exam.total_marks)) * 100)
-        setResult({
-          score: Number(exam.score),
-          total_marks: Number(exam.total_marks),
-          percentage,
-          submitted_at: new Date().toISOString(),
-        })
       } catch {
         setResult(null)
       } finally {

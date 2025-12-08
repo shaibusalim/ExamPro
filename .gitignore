@@ -46,7 +46,8 @@ firebase-debug.log
 .firebaserc
 .runtimeconfig.json
 serviceAccountKey.json
-
+basic8.json
+conver.js
 
 # IDEs and editors
 .vscode/
