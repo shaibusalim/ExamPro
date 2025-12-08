@@ -1,8 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  experimental: {
-    appDir: true,
-  },
+  reactStrictMode: true,      // optional, but recommended
+  appDir: true,               // move out of experimental
   typescript: {
     ignoreBuildErrors: true,
   },

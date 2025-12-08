@@ -1,8 +1,7 @@
 import OpenAI from 'openai';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+const OPENAI_KEY = process.env.OPENAI_API_KEY;
+const openai = OPENAI_KEY ? new OpenAI({ apiKey: OPENAI_KEY }) : null;
 
 interface QuestionGenerationParams {
   type: "objective" | "fill_in_the_blanks" | "theory" | "practical";
@@ -74,6 +73,8 @@ Rules:
 - At least 30% of questions should be scenario/story form that require logic.
 - Output ONLY a JSON array.
 `;
+      if (!openai) throw new Error('OpenAI not configured');
+      if (!openai) throw new Error('OpenAI not configured');
       const resp = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
