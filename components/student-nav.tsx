@@ -23,7 +23,6 @@ export function StudentNav() {
     { href: "/student/dashboard", label: "Dashboard", icon: Home },
     { href: "/student/practice", label: "Practice", icon: Zap },
     { href: "/student/leaderboard", label: "Leaderboard", icon: Trophy },
-    { href: "/student/practice-results", label: "Practice Results", icon: CheckCircle2 },
     { href: "/student/exams", label: "Exam", icon: FileText },
   ]
 

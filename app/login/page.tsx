@@ -3,6 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
+import { useAuth } from "@/lib/auth-client"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -15,6 +16,7 @@ import { Eye, EyeOff } from "lucide-react"
 
 export default function LoginPage() {
   const router = useRouter()
+  const { login } = useAuth()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
@@ -44,6 +46,7 @@ export default function LoginPage() {
       // Store the token in localStorage
       if (data.token) {
         localStorage.setItem("auth_token", data.token);
+        login(data.token)
       } else {
         setError("Login successful, but no token received.");
         return;

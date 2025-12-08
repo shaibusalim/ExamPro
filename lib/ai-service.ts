@@ -430,6 +430,7 @@ export async function gradeTheoryAnswer(
         'Student answer: ' + String(studentAnswer || ''),
       ];
       const prompt = promptParts.filter(Boolean).join('\n');
+      if (!openai) throw new Error('OpenAI client not initialized');
       const resp = await openai.chat.completions.create({
         model: 'gpt-4o-mini',
         messages: [{ role: 'user', content: prompt }],
