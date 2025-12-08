@@ -107,7 +107,7 @@ export default function AdminStudentsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-background">
       <AdminNav />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-12 animate-fade-in">
@@ -119,17 +119,17 @@ export default function AdminStudentsPage() {
               <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
                 Manage Students
               </h1>
-              <p className="text-slate-400 mt-1">View and manage all registered students</p>
+              <p className="text-muted-foreground mt-1">View and manage all registered students</p>
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
             <Card className="p-6 bg-gradient-to-br from-blue-500/10 to-cyan-500/5 border border-blue-500/20 hover:border-blue-500/40 transition-all duration-300">
-              <p className="text-slate-400 text-sm">Total Students</p>
+              <p className="text-muted-foreground text-sm">Total Students</p>
               <p className="text-3xl font-bold text-blue-300 mt-2">{students.length}</p>
             </Card>
             <Card className="p-6 bg-gradient-to-br from-green-500/10 to-emerald-500/5 border border-green-500/20 hover:border-green-500/40 transition-all duration-300">
-              <p className="text-slate-400 text-sm">Avg Performance</p>
+              <p className="text-muted-foreground text-sm">Avg Performance</p>
               <p className="text-3xl font-bold text-green-300 mt-2">
                 {students.length > 0
                   ? Math.round(students.reduce((acc, s) => acc + s.averageScore, 0) / students.length)
@@ -138,7 +138,7 @@ export default function AdminStudentsPage() {
               </p>
             </Card>
             <Card className="p-6 bg-gradient-to-br from-orange-500/10 to-red-500/5 border border-orange-500/20 hover:border-orange-500/40 transition-all duration-300">
-              <p className="text-slate-400 text-sm">Total Attempts</p>
+              <p className="text-muted-foreground text-sm">Total Attempts</p>
               <p className="text-3xl font-bold text-orange-300 mt-2">
                 {students.reduce((acc, s) => acc + s.totalExamsAttempted, 0)}
               </p>
@@ -147,16 +147,16 @@ export default function AdminStudentsPage() {
         </div>
 
         {students.length === 0 ? (
-          <Card className="p-12 text-center bg-slate-800/50 border border-blue-500/20 backdrop-blur">
-            <Users className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400">No students found.</p>
+          <Card className="p-12 text-center bg-card border border-primary/20">
+            <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">No students found.</p>
           </Card>
         ) : (
           <div className="grid gap-4">
             {students.map((s, idx) => (
               <Card
                 key={s.id}
-                className="p-6 bg-gradient-to-r from-slate-800/50 to-blue-900/20 border border-blue-500/20 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 transform hover:scale-[1.02]"
+                className="p-6 bg-card border border-primary/20 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 transform hover:scale-[1.02]"
                 style={{ animationDelay: `${idx * 50}ms` }}
               >
                 <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -166,8 +166,8 @@ export default function AdminStudentsPage() {
                         {s.fullName.charAt(0)}
                       </div>
                       <div>
-                        <div className="text-lg font-semibold text-slate-100">{s.fullName}</div>
-                        <div className="text-sm text-slate-400">{s.email}</div>
+                        <div className="text-lg font-semibold">{s.fullName}</div>
+                        <div className="text-sm text-muted-foreground">{s.email}</div>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-2 pt-2">

@@ -72,21 +72,21 @@ export default function AdminDashboardPage() {
 
   if (loading || authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-background flex items-center justify-center">
         <Spinner />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-background">
       <AdminNav />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-12 space-y-2 animate-fade-in">
           <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
             Welcome, Admin!
           </h1>
-          <p className="text-slate-400 text-lg">Here's a quick overview of the platform performance.</p>
+          <p className="text-muted-foreground text-lg">Here's a quick overview of the platform performance.</p>
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-12">
@@ -112,13 +112,13 @@ export default function AdminDashboardPage() {
             return (
               <Card
                 key={idx}
-                className="group relative overflow-hidden bg-gradient-to-br from-slate-800/50 to-slate-900/50 border border-slate-700/50 p-6 hover:border-blue-500/50 transition-all duration-500 hover:shadow-xl hover:shadow-blue-500/10 cursor-pointer backdrop-blur-sm"
+                className="group relative overflow-hidden bg-card border border-primary/20 p-6 hover:border-primary/40 transition-all duration-500 hover:shadow-lg hover:shadow-primary/10 cursor-pointer"
               >
                 <div className="absolute inset-0 bg-gradient-to-br opacity-0 group-hover:opacity-10 transition-opacity duration-500 pointer-events-none" />
 
                 <div className="relative flex items-start justify-between">
                   <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">
+                    <p className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
                       {stat.label}
                     </p>
                     <div
@@ -131,7 +131,7 @@ export default function AdminDashboardPage() {
                     </div>
                   </div>
                   <div
-                    className={`rounded-lg bg-gradient-to-br ${stat.color} p-3 shadow-lg group-hover:scale-110 transition-transform duration-300`}
+                    className={`rounded-lg bg-gradient-to-br ${stat.color} p-3 shadow-md group-hover:scale-110 transition-transform duration-300`}
                   >
                     <Icon className="w-6 h-6 text-white" />
                   </div>
