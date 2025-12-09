@@ -86,7 +86,7 @@ export default function AnalyticsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background via-secondary/5 to-background">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
         <Spinner />
       </div>
     )
@@ -94,7 +94,7 @@ export default function AnalyticsPage() {
 
   if (!analytics) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-background">
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
         <AdminNav />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="flex items-center gap-3 mb-8">
@@ -105,14 +105,14 @@ export default function AnalyticsPage() {
               Platform Analytics
             </h1>
           </div>
-          <p className="text-muted-foreground">Failed to load analytics data.</p>
+          <p className="text-slate-400">Failed to load analytics data.</p>
         </main>
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-secondary/5 to-background">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
       <AdminNav />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="flex items-center gap-3 mb-12">
@@ -125,10 +125,10 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-6 mb-12">
-          <Card className="p-6 bg-card border border-primary/20 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 group cursor-default animate-fade-in">
+          <Card className="p-6 bg-slate-900/40 border border-blue-900/30 backdrop-blur-sm hover:border-blue-700/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 group cursor-default animate-fade-in">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                <div className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">
                   Total Students
                 </div>
                 <div className="text-3xl font-bold mt-2 bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
@@ -141,10 +141,10 @@ export default function AnalyticsPage() {
             </div>
           </Card>
 
-          <Card className="p-6 bg-card border border-primary/20 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 group cursor-default animate-fade-in delay-100">
+          <Card className="p-6 bg-slate-900/40 border border-blue-900/30 backdrop-blur-sm hover:border-blue-700/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 group cursor-default animate-fade-in delay-100">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                <div className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">
                   Total Exams
                 </div>
                 <div className="text-3xl font-bold mt-2 bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
@@ -157,10 +157,10 @@ export default function AnalyticsPage() {
             </div>
           </Card>
 
-          <Card className="p-6 bg-card border border-primary/20 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 group cursor-default animate-fade-in delay-200">
+          <Card className="p-6 bg-slate-900/40 border border-blue-900/30 backdrop-blur-sm hover:border-blue-700/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 group cursor-default animate-fade-in delay-200">
             <div className="flex items-center justify-between">
               <div>
-                <div className="text-sm font-medium text-muted-foreground group-hover:text-foreground transition-colors">
+                <div className="text-sm font-medium text-slate-400 group-hover:text-slate-300 transition-colors">
                   Avg Platform Score
                 </div>
                 <div className="text-3xl font-bold mt-2 bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
@@ -175,12 +175,12 @@ export default function AnalyticsPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-6 mb-12">
-          <Card className="p-6 bg-card border border-primary/20 hover:border-primary/40 transition-all duration-300 animate-fade-in">
+          <Card className="p-6 bg-slate-900/40 border border-blue-900/30 backdrop-blur-sm hover:border-blue-700/50 transition-all duration-300 animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-2xl font-semibold">Exam Performance Breakdown</h2>
+              <h2 className="text-2xl font-semibold text-slate-100">Exam Performance Breakdown</h2>
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={analytics.examBreakdown}>
@@ -189,29 +189,29 @@ export default function AnalyticsPage() {
                 <YAxis stroke="rgba(148, 163, 184, 0.5)" />
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "rgba(248, 250, 252, 0.95)",
-                    border: "1px solid rgba(59, 130, 246, 0.2)",
+                    backgroundColor: "rgba(15, 23, 42, 0.9)",
+                    border: "1px solid rgba(96, 165, 250, 0.3)",
                     borderRadius: "8px",
                   }}
-                  labelStyle={{ color: "#0f172a" }}
+                  labelStyle={{ color: "#e2e8f0" }}
                 />
                 <Bar dataKey="avgScore" fill="url(#colorGradient)" radius={[8, 8, 0, 0]} />
                 <defs>
                   <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.8} />
-                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.6} />
+                    <stop offset="0%" stopColor="#3b82f6" />
+                    <stop offset="100%" stopColor="#06b6d4" />
                   </linearGradient>
                 </defs>
               </BarChart>
             </ResponsiveContainer>
           </Card>
 
-          <Card className="p-6 bg-card border border-primary/20 hover:border-primary/40 transition-all duration-300 animate-fade-in">
+          <Card className="p-6 bg-slate-900/40 border border-blue-900/30 backdrop-blur-sm hover:border-blue-700/50 transition-all duration-300 animate-fade-in">
             <div className="flex items-center gap-3 mb-6">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-emerald-500 flex items-center justify-center">
                 <PieChartIcon className="w-5 h-5 text-white" />
               </div>
-              <h2 className="text-2xl font-semibold">Top 5 Student Performance</h2>
+              <h2 className="text-2xl font-semibold text-slate-100">Top 5 Student Performance</h2>
             </div>
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
@@ -230,11 +230,11 @@ export default function AnalyticsPage() {
                 </Pie>
                 <Tooltip
                   contentStyle={{
-                    backgroundColor: "rgba(248, 250, 252, 0.95)",
-                    border: "1px solid rgba(59, 130, 246, 0.2)",
+                    backgroundColor: "rgba(15, 23, 42, 0.9)",
+                    border: "1px solid rgba(96, 165, 250, 0.3)",
                     borderRadius: "8px",
                   }}
-                  labelStyle={{ color: "#0f172a" }}
+                  labelStyle={{ color: "#e2e8f0" }}
                 />
               </PieChart>
             </ResponsiveContainer>

@@ -138,18 +138,18 @@ export default function CreateExamPage() {
   }
 
   if (loading) {
-    return ( <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5"> <Spinner /> </div>
+    return ( <div className="min-h-screen flex items-center justify-center bg-background"> <Spinner /> </div>
     )
   }
 
-  return ( <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5"> <AdminNav /> <main className="max-w-4xl mx-auto px-4 py-12">
+  return ( <div className="min-h-screen bg-background"> <AdminNav /> <main className="max-w-4xl mx-auto px-4 py-12">
     {error && ( <Alert variant="destructive" className="mb-6"> <AlertDescription>{error}</AlertDescription> </Alert>
     )}
     {success && ( <Alert className="mb-6"> <AlertDescription>{success}</AlertDescription> </Alert>
     )}
 
         <form onSubmit={handleCreateExam} className="space-y-6">
-          <Card className="p-6 bg-card border border-primary/20">
+          <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Exam Details</h2>
 
             <div className="grid md:grid-cols-2 gap-4">
@@ -227,7 +227,7 @@ export default function CreateExamPage() {
           </Card>
 
           {/* Question Selection */}
-          <Card className="p-6 bg-card border border-primary/20">
+          <Card className="p-6">
             <h2 className="text-xl font-semibold mb-4">Select Questions</h2>
             {questions.length === 0 ? (
               <p>No questions available for this class. Add them to the question bank first.</p>
@@ -250,7 +250,7 @@ export default function CreateExamPage() {
                   {questions.map((q) => (
                     <div
                       key={q.id}
-                      className="p-3 border border-border rounded flex items-start gap-3 hover:bg-primary/10"
+                      className="p-3 border rounded flex items-start gap-3 hover:bg-slate-800"
                     >
                       <Checkbox
                         checked={selectedQuestions.includes(q.id)}

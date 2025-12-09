@@ -30,7 +30,7 @@ export function AdminNav() {
   ]
 
   return (
-    <nav className="sticky top-0 z-50 border-b border-primary/20 bg-gradient-to-r from-primary/5 via-secondary/5 to-primary/5 backdrop-blur-sm shadow-lg shadow-primary/10">
+    <nav className="sticky top-0 z-50 border-b border-blue-900/20 bg-gradient-to-r from-slate-950 via-slate-900 to-blue-950 backdrop-blur-sm shadow-lg shadow-blue-950/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
         <Link href="/admin/dashboard" className="flex items-center gap-2 group">
           <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30 group-hover:shadow-blue-500/50 transition-all duration-300">
@@ -51,8 +51,8 @@ export function AdminNav() {
                 href={item.href}
                 className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-300 ${
                   active
-                    ? "bg-primary/15 text-primary shadow-lg shadow-primary/10"
-                    : "text-foreground/80 hover:text-primary hover:bg-primary/10"
+                    ? "bg-blue-500/20 text-blue-300 shadow-lg shadow-blue-500/20"
+                    : "text-slate-300 hover:text-blue-300 hover:bg-blue-500/10"
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -66,15 +66,15 @@ export function AdminNav() {
               <Button
                 variant="ghost"
                 size="sm"
-                className="ml-4 text-foreground/80 hover:text-primary hover:bg-primary/10 transition-all duration-300"
+                className="ml-4 text-slate-300 hover:text-blue-300 hover:bg-blue-500/10 transition-all duration-300"
               >
                 Menu
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="bg-card border border-primary/20 shadow-xl">
+            <DropdownMenuContent align="end" className="bg-slate-900 border border-blue-900/30 shadow-xl">
               <DropdownMenuItem
                 onClick={handleLogout}
-                className="text-destructive hover:text-destructive-foreground hover:bg-destructive/10 cursor-pointer transition-colors"
+                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 cursor-pointer transition-colors"
               >
                 <LogOut className="w-4 h-4 mr-2" />
                 Logout
@@ -92,7 +92,7 @@ export function AdminNav() {
             </SheetTrigger>
             <SheetContent
               side="right"
-              className="bg-gradient-to-b from-background to-secondary/5 border-l border-primary/20"
+              className="bg-gradient-to-b from-slate-900 to-slate-950 border-l border-blue-900/30"
             >
               <div className="sr-only">
                 <SheetTitle>Menu</SheetTitle>
@@ -107,8 +107,8 @@ export function AdminNav() {
                       href={item.href}
                       className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-300 ${
                         active
-                          ? "bg-primary/15 text-primary"
-                          : "text-foreground/80 hover:text-primary hover:bg-primary/10"
+                          ? "bg-blue-500/20 text-blue-300"
+                          : "text-slate-300 hover:text-blue-300 hover:bg-blue-500/10"
                       }`}
                       onClick={() => setIsMobileMenuOpen(false)}
                     >

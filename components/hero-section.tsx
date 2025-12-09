@@ -1,10 +1,15 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Users, CheckCircle2, Sparkles, BarChart3 } from "lucide-react"
 import { useState, useEffect } from "react"
 import { AnimatedGrid, TypewriterText } from "./hero-animations"
+import img1 from "@/images/img1.jpg"
+import img2 from "@/images/img2.jpg"
+import img3 from "@/images/img3.jpg"
+import img4 from "@/images/img4.jpg"
 
 export function HeroSection() {
   const rotatingTexts = [
@@ -14,6 +19,7 @@ export function HeroSection() {
     "Achieve Academic Excellence",
   ]
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
+  const [bgIndex, setBgIndex] = useState(0)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -22,13 +28,34 @@ export function HeroSection() {
     return () => clearInterval(interval)
   }, [rotatingTexts.length])
 
+  useEffect(() => {
+    const id = setInterval(() => {
+      setBgIndex((i) => (i + 1) % 4)
+    }, 5000)
+    return () => clearInterval(id)
+  }, [])
+
   return (
-    <section className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-32 space-y-12 overflow-hidden">
-      <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
+    <section className="relative w-full py-20 md:py-32 overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        {[img1, img2, img3, img4].map((src, i) => (
+          <Image
+            key={i}
+            src={src}
+            alt="Background"
+            fill
+            priority={i === 0}
+            className={`object-cover transition-opacity duration-1000 ${bgIndex === i ? "opacity-100" : "opacity-0"}`}
+          />
+        ))}
+        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
+      </div>
+      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-white">
+        <div className="grid md:grid-cols-2 gap-8 lg:gap-12 items-center">
         {/* Left Content */}
         <div className="space-y-8 z-10 animate-fade-in">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-effect text-sm font-medium text-foreground animate-scale-in backdrop-blur-md border border-primary/20">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full glass-effect text-sm font-medium animate-scale-in backdrop-blur-md border border-primary/20">
             <Sparkles className="w-4 h-4 text-secondary animate-spin-slow" />
             <span>The Future of Education Technology</span>
           </div>
@@ -42,7 +69,7 @@ export function HeroSection() {
           </div>
 
           {/* Subheading */}
-          <p className="text-lg md:text-xl text-muted-foreground max-w-2xl text-balance leading-relaxed animate-fade-in-delay">
+          <p className="text-lg md:text-xl text-gray-300 max-w-2xl text-balance leading-relaxed animate-fade-in-delay">
             ExamPro is the ultimate exam preparation platform. Create, manage, and ace exams aligned with GES Computing
             curriculum for Basic 7 & 8 students with real-time scoring and instant feedback.
           </p>
@@ -71,7 +98,7 @@ export function HeroSection() {
           </div>
 
           {/* Social Proof */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-8 text-sm text-muted-foreground animate-fade-in-delay-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-6 pt-8 text-sm text-gray-300 animate-fade-in-delay-2">
             <div className="flex items-center gap-2 glass-effect px-3 py-2 rounded-lg backdrop-blur-md">
               <Users className="w-5 h-5 text-secondary" />
               <span>500+ educators trust us</span>
@@ -122,14 +149,14 @@ export function HeroSection() {
                       className="glass-effect rounded-lg p-3 backdrop-blur-md border border-secondary/20 animate-slide-in-left"
                       style={{ animationDelay: "0.1s" }}
                     >
-                      <div className="text-xs text-muted-foreground">Score</div>
+                      <div className="text-xs text-gray-300">Score</div>
                       <div className="text-lg font-bold text-secondary">85%</div>
                     </div>
                     <div
                       className="glass-effect rounded-lg p-3 backdrop-blur-md border border-accent/20 animate-slide-in-left"
                       style={{ animationDelay: "0.2s" }}
                     >
-                      <div className="text-xs text-muted-foreground">Time Left</div>
+                      <div className="text-xs text-gray-300">Time Left</div>
                       <div className="text-lg font-bold text-accent">5:32</div>
                     </div>
                   </div>
@@ -140,10 +167,10 @@ export function HeroSection() {
                     style={{ animationDelay: "0.3s" }}
                   >
                     <div className="flex items-center justify-between text-sm">
-                      <span className="text-muted-foreground">Exam Progress</span>
+                      <span className="text-gray-300">Exam Progress</span>
                       <span className="text-primary font-semibold">12/15</span>
                     </div>
-                    <div className="w-full h-2 bg-foreground/10 rounded-full overflow-hidden">
+                    <div className="w-full h-2 bg-white/10 rounded-full overflow-hidden">
                       <div className="h-full w-4/5 bg-gradient-to-r from-primary to-secondary rounded-full animate-pulse"></div>
                     </div>
                   </div>
@@ -162,6 +189,7 @@ export function HeroSection() {
 
           {/* Glow effect on hover */}
           <div className="absolute -inset-2 bg-gradient-to-r from-primary/20 to-secondary/20 rounded-3xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500 -z-20"></div>
+        </div>
         </div>
       </div>
     </section>
