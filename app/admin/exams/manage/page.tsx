@@ -81,14 +81,14 @@ export default function AdminManageExamsPage() {
 
   if (loading || authLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5 flex items-center justify-center">
         <Spinner />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
       <AdminNav />
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="mb-12 animate-fade-in">
@@ -96,7 +96,7 @@ export default function AdminManageExamsPage() {
             <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
               <Clipboard className="w-6 h-6 text-white" />
             </div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
+            <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
               Manage Exams
             </h1>
           </div>
@@ -104,12 +104,12 @@ export default function AdminManageExamsPage() {
         </div>
 
         {exams.length === 0 ? (
-          <Card className="p-12 text-center border-blue-900/20 bg-slate-900/50 backdrop-blur-sm">
-            <Clipboard className="w-12 h-12 text-slate-600 mx-auto mb-4 opacity-50" />
+          <Card className="p-12 text-center bg-card border border-primary/20">
+            <Clipboard className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-70" />
             <p className="text-muted-foreground text-lg">No exams found. Create your first exam to get started.</p>
             <Button
               onClick={() => router.push("/admin/exams/create")}
-              className="mt-6 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white shadow-lg shadow-blue-500/30"
+              className="mt-6 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground shadow-lg shadow-primary/20"
             >
               Create Exam
             </Button>
@@ -119,17 +119,17 @@ export default function AdminManageExamsPage() {
             {exams.map((exam) => (
               <Card
                 key={exam.id}
-                className="p-6 border-blue-900/20 bg-slate-900/50 backdrop-blur-sm hover:bg-slate-900/60 hover:border-blue-500/30 transition-all duration-300 shadow-lg shadow-blue-950/10 animate-fade-in"
+                className="p-6 bg-card border border-primary/20 hover:border-primary/40 transition-all duration-300 shadow-sm hover:shadow-lg hover:shadow-primary/10 animate-fade-in"
               >
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div className="space-y-3 flex-1">
                     <div className="flex items-start gap-3">
-                      <div className="w-2 h-8 bg-gradient-to-b from-blue-400 to-cyan-500 rounded-full"></div>
+                      <div className="w-2 h-8 bg-gradient-to-b from-primary to-accent rounded-full"></div>
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-slate-100">{exam.title}</h3>
-                        <p className="text-sm text-slate-400 mt-1">
-                          Topic: <span className="text-blue-400 font-medium">{exam.topic}</span> • Questions:{" "}
-                          <span className="text-cyan-400 font-medium">{exam.questionsCount}</span>
+                        <h3 className="text-lg font-semibold">{exam.title}</h3>
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Topic: <span className="text-primary font-medium">{exam.topic}</span> • Questions:{" "}
+                          <span className="text-accent font-medium">{exam.questionsCount}</span>
                         </p>
                       </div>
                     </div>
@@ -180,7 +180,7 @@ export default function AdminManageExamsPage() {
                         })
                         setExams((prev) => prev.map((e) => (e.id === exam.id ? { ...e, status: "published" } : e)))
                       }}
-                      className="bg-blue-600 hover:bg-blue-500 text-white"
+                      className="bg-primary hover:bg-primary/90 text-primary-foreground"
                     >
                       Publish
                     </Button>
@@ -197,7 +197,7 @@ export default function AdminManageExamsPage() {
                         await refetchExams()
                       }
                     }}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    className="bg-destructive hover:bg-red-700 text-white"
                   >
                     Delete
                   </Button>

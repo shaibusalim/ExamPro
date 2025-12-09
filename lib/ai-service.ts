@@ -417,7 +417,7 @@ export async function gradeTheoryAnswer(
   question: string,
   studentAnswer: string,
   correctAnswer?: string,
-  maxMarks: number = 5,
+  maxMarks: number = 10,
 ): Promise<number> {
   const useLLM = !!process.env.OPENAI_API_KEY;
   const clamp = (n: number) => Math.max(0, Math.min(maxMarks, Math.round(n)));

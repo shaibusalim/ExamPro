@@ -177,27 +177,27 @@ export default function QuestionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
         <Spinner />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
+    <div className="min-h-screen bg-gradient-to-br from-primary/5 via-accent/5 to-secondary/5">
       <AdminNav />
 
       <main className="max-w-4xl mx-auto px-4 py-12">
         <div className="mb-8 animate-fade-in">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
+            <div className="w-12 h-12 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shadow-lg shadow-primary/20">
               <BookOpen className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-300 to-cyan-300 bg-clip-text text-transparent">
+              <h1 className="text-4xl font-bold bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
                 Question Bank
               </h1>
-              <p className="text-slate-400 mt-1">Create and manage exam questions</p>
+              <p className="text-muted-foreground mt-1">Create and manage exam questions</p>
             </div>
           </div>
         </div>
@@ -215,17 +215,17 @@ export default function QuestionsPage() {
         )}
 
         <Tabs defaultValue="create" className="space-y-6">
-          <TabsList className="bg-slate-800/50 border border-blue-500/20">
+          <TabsList className="bg-card border border-border">
             <TabsTrigger
               value="create"
-              className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300"
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
             >
               <Plus className="w-4 h-4 mr-2" />
               Create Question
             </TabsTrigger>
             <TabsTrigger
               value="browse"
-              className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300"
+              className="data-[state=active]:bg-primary/10 data-[state=active]:text-primary"
             >
               <Eye className="w-4 h-4 mr-2" />
               Browse Questions
@@ -234,11 +234,11 @@ export default function QuestionsPage() {
 
           <TabsContent value="create" className="space-y-6">
             <form onSubmit={handleCreateQuestion} className="space-y-6">
-              <Card className="p-6 space-y-6 bg-gradient-to-br from-slate-800/50 to-blue-900/20 border border-blue-500/20">
-                <h2 className="text-xl font-semibold text-slate-100">Question Details</h2>
+              <Card className="p-6 space-y-6 bg-card border border-primary/20">
+                <h2 className="text-xl font-semibold">Question Details</h2>
 
                 <div className="space-y-2">
-                  <Label htmlFor="classLevel" className="text-slate-300">
+                  <Label htmlFor="classLevel" className="text-muted-foreground">
                     Class Level *
                   </Label>
                   <Select
@@ -249,10 +249,10 @@ export default function QuestionsPage() {
                       setActiveForm(null) // Reset active form on class level change
                     }}
                   >
-                    <SelectTrigger className="bg-slate-900/50 border-blue-500/20 text-slate-100">
+                    <SelectTrigger className="bg-background border-border text-foreground">
                       <SelectValue placeholder="Select class level" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-blue-500/20">
+                    <SelectContent className="bg-popover border-border">
                       <SelectItem value="B7">Basic 7</SelectItem>
                       <SelectItem value="B8">Basic 8</SelectItem>
                     </SelectContent>
@@ -260,7 +260,7 @@ export default function QuestionsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="topic" className="text-slate-300">
+                  <Label htmlFor="topic" className="text-muted-foreground">
                     Topic *
                   </Label>
                   <Select
@@ -271,10 +271,10 @@ export default function QuestionsPage() {
                     }}
                     disabled={activeForm === "bulk"} // Disable if bulk is active
                   >
-                    <SelectTrigger className="bg-slate-900/50 border-blue-500/20 text-slate-100">
+                    <SelectTrigger className="bg-background border-border text-foreground">
                       <SelectValue placeholder="Select topic" />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-blue-500/20">
+                    <SelectContent className="bg-popover border-border">
                       {topics
                         .filter((topic) => topic.class_level === classLevel)
                         .map((topic) => (
@@ -287,7 +287,7 @@ export default function QuestionsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="questionType" className="text-slate-300">
+                  <Label htmlFor="questionType" className="text-muted-foreground">
                     Question Type *
                   </Label>
                   <Select
@@ -298,10 +298,10 @@ export default function QuestionsPage() {
                     }}
                     disabled={activeForm === "bulk"}
                   >
-                    <SelectTrigger className="bg-slate-900/50 border-blue-500/20 text-slate-100">
+                    <SelectTrigger className="bg-background border-border text-foreground">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="bg-slate-900 border-blue-500/20">
+                    <SelectContent className="bg-popover border-border">
                       <SelectItem value="mcq">Multiple Choice</SelectItem>
                       <SelectItem value="true_false">True/False</SelectItem>
                       <SelectItem value="fill_blank">Fill in the Blank</SelectItem>
@@ -311,7 +311,7 @@ export default function QuestionsPage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="questionText" className="text-slate-300">
+                  <Label htmlFor="questionText" className="text-muted-foreground">
                     Question Text *
                   </Label>
                   <Textarea
@@ -324,14 +324,14 @@ export default function QuestionsPage() {
                     }}
                     required
                     rows={3}
-                    className="bg-slate-900/50 border-blue-500/20 text-slate-100 placeholder-slate-500"
+                    className="bg-background border-border text-foreground placeholder-muted-foreground"
                     disabled={activeForm === "bulk"}
                   />
                 </div>
 
                 <div className="grid md:grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="marks" className="text-slate-300">
+                    <Label htmlFor="marks" className="text-muted-foreground">
                       Marks
                     </Label>
                     <Input
@@ -343,28 +343,28 @@ export default function QuestionsPage() {
                         setFormData({ ...formData, marks: isNaN(value) ? 0 : value })
                         setActiveForm("single") // Activate single form on marks input
                       }}
-                      className="bg-slate-900/50 border-blue-500/20 text-slate-100"
+                      className="bg-background border-border text-foreground"
                       disabled={activeForm === "bulk"}
                     />
                   </div>
 
                   {(formData.questionType === "mcq" || formData.questionType === "true_false") && (
                     <div className="space-y-2">
-                      <Label htmlFor="correctAnswer" className="text-slate-300">
-                        Correct Answer *
-                      </Label>
-                      <Select
-                        value={formData.correctAnswer}
+                    <Label htmlFor="correctAnswer" className="text-muted-foreground">
+                      Correct Answer *
+                    </Label>
+                    <Select
+                      value={formData.correctAnswer}
                         onValueChange={(value) => {
                           setFormData({ ...formData, correctAnswer: value })
                           setActiveForm("single") // Activate single form on correct answer selection
                         }}
                         disabled={activeForm === "bulk"}
                       >
-                        <SelectTrigger className="bg-slate-900/50 border-blue-500/20 text-slate-100">
+                        <SelectTrigger className="bg-background border-border text-foreground">
                           <SelectValue placeholder="Select correct answer" />
                         </SelectTrigger>
-                        <SelectContent className="bg-slate-900 border-blue-500/20">
+                        <SelectContent className="bg-popover border-border">
                           {formData.options.map(
                             (opt, idx) =>
                               opt && (
@@ -381,7 +381,7 @@ export default function QuestionsPage() {
 
                 {(formData.questionType === "mcq" || formData.questionType === "true_false") && (
                   <div className="space-y-4">
-                    <Label className="text-slate-300">Options</Label>
+                    <Label className="text-muted-foreground">Options</Label>
                     {formData.options.map((option, idx) => (
                       <Input
                         key={idx}
@@ -393,7 +393,7 @@ export default function QuestionsPage() {
                           setFormData({ ...formData, options: newOptions })
                           setActiveForm("single") // Activate single form on option input
                         }}
-                        className="bg-slate-900/50 border-blue-500/20 text-slate-100 placeholder-slate-500"
+                        className="bg-background border-border text-foreground placeholder-muted-foreground"
                         disabled={activeForm === "bulk"}
                       />
                     ))}
@@ -401,7 +401,7 @@ export default function QuestionsPage() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="explanation" className="text-slate-300">
+                  <Label htmlFor="explanation" className="text-muted-foreground">
                     Explanation
                   </Label>
                   <Textarea
@@ -413,13 +413,13 @@ export default function QuestionsPage() {
                       setActiveForm("single") // Activate single form on explanation input
                     }}
                     rows={2}
-                    className="bg-slate-900/50 border-blue-500/20 text-slate-100 placeholder-slate-500"
+                    className="bg-background border-border text-foreground placeholder-muted-foreground"
                     disabled={activeForm === "bulk"}
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="image" className="text-slate-300">
+                  <Label htmlFor="image" className="text-muted-foreground">
                     Question Image (Optional)
                   </Label>
                   <Input
@@ -448,13 +448,13 @@ export default function QuestionsPage() {
                         }
                       }
                     }}
-                    className="bg-slate-900/50 border-blue-500/20 text-slate-100 file:text-blue-300 file:bg-blue-900/30 file:border-blue-500/20 file:border"
+                    className="bg-background border-border text-foreground file:text-primary file:bg-primary/10 file:border-primary/20 file:border"
                     disabled={activeForm === "bulk"}
                   />
                   {isUploadingImage && <Spinner className="mt-2" />}
                   {uploadedImageUrl && (
                     <div className="mt-4">
-                      <p className="text-slate-300 text-sm mb-2">Image Preview:</p>
+                      <p className="text-muted-foreground text-sm mb-2">Image Preview:</p>
                       <img src={uploadedImageUrl} alt="Question Preview" className="max-w-xs h-auto rounded-md shadow-md" />
                     </div>
                   )}
@@ -462,13 +462,13 @@ export default function QuestionsPage() {
               </Card>
 
               <Card
-                className={`p-6 space-y-6 bg-gradient-to-br from-slate-800/50 to-blue-900/20 border border-blue-500/20 ${
+                className={`p-6 space-y-6 bg-card border border-primary/20 ${
                   activeForm === "single" ? "opacity-50 pointer-events-none" : ""
                 }`}
               >
-                <h2 className="text-xl font-semibold text-slate-100">Bulk Upload Questions</h2>
+                <h2 className="text-xl font-semibold">Bulk Upload Questions</h2>
                 <div className="space-y-2">
-                  <Label htmlFor="bulkUploadFile" className="text-slate-300">
+                  <Label htmlFor="bulkUploadFile" className="text-muted-foreground">
                     Upload JSON or CSV file
                   </Label>
                   <Input
@@ -534,7 +534,7 @@ export default function QuestionsPage() {
       console.error(err);
     }
   }}
-  className="bg-slate-900/50 border-blue-500/20 text-slate-100"
+  className="bg-background border-border text-foreground"
   disabled={activeForm === "single"} // Disable if single is active
 />
                     
@@ -545,7 +545,7 @@ export default function QuestionsPage() {
               <div className="flex gap-4">
                 <Button
                   type="submit"
-                  className="flex-1 bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-600 hover:to-cyan-600 text-white font-semibold transition-all duration-300 shadow-lg shadow-blue-500/30"
+                  className="flex-1 bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-primary-foreground font-semibold transition-all duration-300 shadow-lg shadow-primary/20"
                   disabled={activeForm === "bulk" || (!formData.topicId || !formData.questionText)} // Disable if bulk is active or form is invalid
                 >
                   <Plus className="w-4 h-4 mr-2" />
@@ -556,35 +556,35 @@ export default function QuestionsPage() {
           </TabsContent>
 
           <TabsContent value="browse" className="space-y-4">
-            <h2 className="text-2xl font-bold text-slate-100">All Questions ({Array.isArray(questions) ? questions.length : 0})</h2>
+            <h2 className="text-2xl font-bold">All Questions ({Array.isArray(questions) ? questions.length : 0})</h2>
             {!Array.isArray(questions) || questions.length === 0 ? (
-              <Card className="p-12 text-center bg-gradient-to-br from-slate-800/50 to-blue-900/20 border border-blue-500/20">
-                <BookOpen className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-                <p className="text-slate-400">No questions available. Create questions or use AI to generate some!</p>
+              <Card className="p-12 text-center bg-card border border-primary/20">
+                <BookOpen className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-70" />
+                <p className="text-muted-foreground">No questions available. Create questions or use AI to generate some!</p>
               </Card>
             ) : (
               <div className="grid gap-4">
                 {questions.map((question, idx) => (
                   <Card
                     key={question.id}
-                    className="p-6 bg-gradient-to-r from-slate-800/50 to-blue-900/20 border border-blue-500/20 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300"
+                    className="p-6 bg-card border border-primary/20 hover:border-primary/40 hover:shadow-lg hover:shadow-primary/10 transition-all duration-300"
                     style={{ animationDelay: `${idx * 50}ms` }}
                   >
                     <div className="space-y-3">
                       <div className="flex items-start justify-between gap-4">
-                        <h3 className="text-lg font-semibold text-slate-100 flex-1">{question.questionText}</h3>
+                        <h3 className="text-lg font-semibold flex-1">{question.questionText}</h3>
                       </div>
                       <div className="flex flex-wrap gap-2">
-                        <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30">
+                        <Badge className="bg-primary/10 text-primary border border-primary/30">
                           {question.questionType.replace("_", " ").toUpperCase()}
                         </Badge>
-                        <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        <Badge className="bg-accent/10 text-accent border border-accent/30">
                           {question.marks} mark(s)
                         </Badge>
                       </div>
                       {question.questionType === "mcq" || question.questionType === "true_false" ? (
-                        <div className="mt-3 text-sm text-slate-300 bg-slate-900/30 p-3 rounded-lg">
-                          <p className="font-semibold text-slate-200 mb-2">Options:</p>
+                        <div className="mt-3 text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                          <p className="font-semibold mb-2">Options:</p>
                           <ul className="list-disc pl-5 space-y-1">
                             {question.options?.map((option, i) => (
                               <li key={i} className={option.isCorrect ? "text-green-300 font-semibold" : ""}>
@@ -595,16 +595,16 @@ export default function QuestionsPage() {
                         </div>
                       ) : (
                         question.correctAnswer && (
-                          <div className="mt-3 text-sm text-slate-300 bg-slate-900/30 p-3 rounded-lg">
-                            <p className="font-semibold text-slate-200">Correct Answer:</p>
+                          <div className="mt-3 text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                            <p className="font-semibold">Correct Answer:</p>
                             <p className="text-green-300 mt-1">{question.correctAnswer}</p>
                           </div>
                         )
                       )}
                       {question.explanation && (
-                        <div className="mt-3 text-sm text-slate-300 bg-slate-900/30 p-3 rounded-lg">
-                          <p className="font-semibold text-slate-200 mb-1">Explanation:</p>
-                          <p className="text-slate-300">{question.explanation}</p>
+                        <div className="mt-3 text-sm text-muted-foreground bg-muted/30 p-3 rounded-lg">
+                          <p className="font-semibold mb-1">Explanation:</p>
+                          <p className="text-muted-foreground">{question.explanation}</p>
                         </div>
                       )}
                     </div>
