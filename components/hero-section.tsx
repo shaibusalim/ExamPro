@@ -36,7 +36,7 @@ export function HeroSection() {
   }, [])
 
   return (
-    <section className="relative w-full py-20 md:py-32 overflow-hidden">
+    <section className="relative w-full py-16 md:py-32 min-h-[60vh] md:min-h-[75vh] overflow-hidden">
       <div className="absolute inset-0 z-0">
         {[img1, img2, img3, img4].map((src, i) => (
           <Image
@@ -44,8 +44,9 @@ export function HeroSection() {
             src={src}
             alt="Background"
             fill
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 100vw"
             priority={i === 0}
-            className={`object-cover transition-opacity duration-1000 ${bgIndex === i ? "opacity-100" : "opacity-0"}`}
+            className={`object-contain sm:object-cover transition-opacity duration-1000 ${bgIndex === i ? "opacity-100" : "opacity-0"}`}
           />
         ))}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-black/70" />
@@ -111,7 +112,7 @@ export function HeroSection() {
         </div>
 
         {/* Right Hero Image */}
-        <div className="relative h-96 md:h-full min-h-96 group animate-fade-in-right">
+        <div className="relative h-64 sm:h-80 md:h-full min-h-64 group animate-fade-in-right">
           {/* Animated background gradient */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/30 via-secondary/20 to-accent/30 rounded-2xl blur-3xl animate-pulse"></div>
 
