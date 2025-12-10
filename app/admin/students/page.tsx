@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { useAuth } from "@/lib/auth-client"
 import { Users, TrendingUp, Lock, Unlock } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
@@ -38,6 +39,8 @@ export default function AdminStudentsPage() {
   const [editClassLevel, setEditClassLevel] = useState("")
   const [pending, setPending] = useState(false)
   const { toast } = useToast()
+  const [query, setQuery] = useState("")
+  const [tab, setTab] = useState<"B7" | "B8">("B7")
 
   async function reloadStudents() {
     const token = localStorage.getItem("auth_token") || ""
@@ -195,98 +198,140 @@ export default function AdminStudentsPage() {
             <p className="text-slate-400">No students found.</p>
           </Card>
         ) : (
-          <div className="grid gap-4">
-            {students.map((s, idx) => (
-              <Card
-                key={s.id}
-                className="p-6 bg-gradient-to-r from-slate-800/50 to-blue-900/20 border border-blue-500/20 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 transform hover:scale-[1.02]"
-                style={{ animationDelay: `${idx * 50}ms` }}
-              >
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                  <div className="space-y-3 flex-1">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm">
-                        {s.fullName.charAt(0)}
-                      </div>
-                      <div>
-                        <div className="text-lg font-semibold text-slate-100">{s.fullName}</div>
-                        <div className="text-sm text-slate-400">{s.email}</div>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 pt-2">
-                      {s.classLevel && (
-                        <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30">{s.classLevel}</Badge>
-                      )}
-                      <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                        <TrendingUp className="w-3 h-3 mr-1" />
-                        {s.totalExamsAttempted} attempts
-                      </Badge>
-                      <Badge className="bg-green-500/20 text-green-300 border border-green-500/30">
-                        {s.averageScore}% avg
-                      </Badge>
-                      {s.lockedDashboard && (
-                        <Badge className="bg-red-500/20 text-red-300 border border-red-500/30">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Dashboard Locked
-                        </Badge>
-                      )}
-                      {s.lockedExams && (
-                        <Badge className="bg-red-500/20 text-red-300 border border-red-500/30">
-                          <Lock className="w-3 h-3 mr-1" />
-                          Exams Locked
-                        </Badge>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex flex-wrap gap-2 md:flex-col">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateLock(s.id, { lockDashboard: !s.lockedDashboard })}
-                      className="border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition-all duration-300"
+          <div className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="md:col-span-2">
+                <Label htmlFor="search" className="text-slate-300">Search students</Label>
+                <Input id="search" value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search by name, email or ID" className="mt-2 bg-slate-900/50 border-blue-500/20 text-slate-100 placeholder-slate-500" />
+              </div>
+            </div>
+
+            {(() => {
+              const q = query.trim().toLowerCase()
+              const filtered = students.filter((s) => {
+                const name = String(s.fullName || "").toLowerCase()
+                const email = String(s.email || "").toLowerCase()
+                const sid = String(s.studentId || s.id || "").toLowerCase()
+                return !q || name.includes(q) || email.includes(q) || sid.includes(q)
+              })
+              const b7 = filtered.filter((s) => String(s.classLevel || "") === "B7")
+              const b8 = filtered.filter((s) => String(s.classLevel || "") === "B8")
+
+              const renderList = (list: AdminStudentSummary[]) => (
+                <div className="grid gap-4">
+                  {list.map((s, idx) => (
+                    <Card
+                      key={s.id}
+                      className="p-6 bg-gradient-to-r from-slate-800/50 to-blue-900/20 border border-blue-500/20 hover:border-blue-500/50 hover:shadow-lg hover:shadow-blue-500/10 transition-all duration-300 transform hover:scale-[1.02]"
+                      style={{ animationDelay: `${idx * 50}ms` }}
                     >
-                      {s.lockedDashboard ? (
-                        <>
-                          <Unlock className="w-3 h-3 mr-1" />
-                          Unlock Dashboard
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-3 h-3 mr-1" />
-                          Lock Dashboard
-                        </>
-                      )}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => updateLock(s.id, { lockExams: !s.lockedExams })}
-                      className="border-orange-500/30 text-orange-300 hover:bg-orange-500/20 transition-all duration-300"
-                    >
-                      {s.lockedExams ? (
-                        <>
-                          <Unlock className="w-3 h-3 mr-1" />
-                          Unlock Exams
-                        </>
-                      ) : (
-                        <>
-                          <Lock className="w-3 h-3 mr-1" />
-                          Lock Exams
-                        </>
-                      )}
-                    </Button>
-                    <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => { setCurrentStudent(s); setEditFullName(s.fullName || ""); setEditClassLevel(s.classLevel || ""); setEditOpen(true) }} className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 transition-all duration-300">
-                        Edit
-                      </Button>
-                      <Button size="sm" variant="outline" onClick={() => { setCurrentStudent(s); setDeleteOpen(true) }} className="border-red-500/30 text-red-300 hover:bg-red-500/20 transition-all duration-300">
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-3 flex-1">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-cyan-500 flex items-center justify-center text-white font-semibold text-sm">
+                              {s.fullName.charAt(0)}
+                            </div>
+                            <div>
+                              <div className="text-lg font-semibold text-slate-100">{s.fullName}</div>
+                              <div className="text-sm text-slate-400">{s.email}</div>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            {s.classLevel && (
+                              <Badge className="bg-blue-500/20 text-blue-300 border border-blue-500/30">{s.classLevel}</Badge>
+                            )}
+                            <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                              <TrendingUp className="w-3 h-3 mr-1" />
+                              {s.totalExamsAttempted} attempts
+                            </Badge>
+                            <Badge className="bg-green-500/20 text-green-300 border border-green-500/30">
+                              {s.averageScore}% avg
+                            </Badge>
+                            {s.lockedDashboard && (
+                              <Badge className="bg-red-500/20 text-red-300 border border-red-500/30">
+                                <Lock className="w-3 h-3 mr-1" />
+                                Dashboard Locked
+                              </Badge>
+                            )}
+                            {s.lockedExams && (
+                              <Badge className="bg-red-500/20 text-red-300 border border-red-500/30">
+                                <Lock className="w-3 h-3 mr-1" />
+                                Exams Locked
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 md:flex-col">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateLock(s.id, { lockDashboard: !s.lockedDashboard })}
+                            className="border-blue-500/30 text-blue-300 hover:bg-blue-500/20 transition-all duration-300"
+                          >
+                            {s.lockedDashboard ? (
+                              <>
+                                <Unlock className="w-3 h-3 mr-1" />
+                                Unlock Dashboard
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="w-3 h-3 mr-1" />
+                                Lock Dashboard
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateLock(s.id, { lockExams: !s.lockedExams })}
+                            className="border-orange-500/30 text-orange-300 hover:bg-orange-500/20 transition-all duration-300"
+                          >
+                            {s.lockedExams ? (
+                              <>
+                                <Unlock className="w-3 h-3 mr-1" />
+                                Unlock Exams
+                              </>
+                            ) : (
+                              <>
+                                <Lock className="w-3 h-3 mr-1" />
+                                Lock Exams
+                              </>
+                            )}
+                          </Button>
+                          <div className="flex gap-2">
+                            <Button size="sm" variant="outline" onClick={() => { setCurrentStudent(s); setEditFullName(s.fullName || ""); setEditClassLevel(s.classLevel || ""); setEditOpen(true) }} className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 transition-all duration-300">
+                              Edit
+                            </Button>
+                            <Button size="sm" variant="outline" onClick={() => { setCurrentStudent(s); setDeleteOpen(true) }} className="border-red-500/30 text-red-300 hover:bg-red-500/20 transition-all duration-300">
+                              Delete
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
-              </Card>
-            ))}
+              )
+
+              return (
+                <Tabs value={tab} onValueChange={(v) => setTab(v as "B7" | "B8") } className="space-y-6">
+                  <TabsList className="bg-slate-800/50 border border-blue-500/20">
+                    <TabsTrigger value="B7" className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300">Basic 7</TabsTrigger>
+                    <TabsTrigger value="B8" className="data-[state=active]:bg-blue-500/20 data-[state=active]:text-blue-300">Basic 8</TabsTrigger>
+                  </TabsList>
+                  <TabsContent value="B7">
+                    {b7.length === 0 ? (
+                      <Card className="p-6 bg-slate-800/50 border border-blue-500/20"><p className="text-slate-400">No students</p></Card>
+                    ) : renderList(b7)}
+                  </TabsContent>
+                  <TabsContent value="B8">
+                    {b8.length === 0 ? (
+                      <Card className="p-6 bg-slate-800/50 border border-blue-500/20"><p className="text-slate-400">No students</p></Card>
+                    ) : renderList(b8)}
+                  </TabsContent>
+                </Tabs>
+              )
+            })()}
           </div>
         )}
         {/* Edit Dialog */}
