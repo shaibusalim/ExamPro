@@ -1,7 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { firestore } from "@/lib/firebaseAdmin";
 
 export async function GET(request: NextRequest) {
   try {
@@ -23,9 +22,10 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Student class level not found in token" }, { status: 400 });
     }
 
-    const examsRef = collection(db, "exams");
-    const q = query(examsRef, where("classId", "==", studentClassLevel), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
+    let q = firestore.collection("exams")
+      .where("classId", "==", studentClassLevel)
+      .orderBy("createdAt", "desc");
+    const querySnapshot = await q.get();
 
     const exams = querySnapshot.docs.map((doc) => ({
       id: doc.id,

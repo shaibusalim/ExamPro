@@ -1,8 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/firebase";
 import { firestore as adminFirestore } from "@/lib/firebaseAdmin";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { generateToken } from "@/lib/auth"; // Keep generateToken for session management
+import { generateToken } from "@/lib/auth";
 
 export async function POST(request: NextRequest) {
   try {
@@ -26,6 +25,25 @@ export async function POST(request: NextRequest) {
     }
 
     // Create user with Firebase Authentication
+    const firebaseConfig = {
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+      measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+    } as const;
+
+    if (!firebaseConfig.apiKey) {
+      return NextResponse.json({ error: "Server missing Firebase configuration" }, { status: 500 });
+    }
+
+    const { initializeApp, getApps, getApp } = await import("firebase/app");
+    const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    const { getAuth } = await import("firebase/auth");
+    const auth = getAuth(app);
+
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 

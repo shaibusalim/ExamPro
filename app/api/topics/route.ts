@@ -1,18 +1,17 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, addDoc } from "firebase/firestore";
+import { firestore } from "@/lib/firebaseAdmin";
 
 export async function GET(request: NextRequest) {
   try {
     const classLevel = request.nextUrl.searchParams.get("classLevel"); // Changed from "level" to "classLevel"
 
-    const topicsRef = collection(db, "topics");
-    let q = query(topicsRef);
+    const baseRef = firestore.collection("topics");
+    let q = baseRef as FirebaseFirestore.Query<FirebaseFirestore.DocumentData>;
     if (classLevel) {
-      q = query(q, where("classLevel", "==", classLevel));
+      q = q.where("classLevel", "==", classLevel);
     }
 
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await q.get();
     let topics = querySnapshot.docs.map((doc) => {
       const data: any = doc.data();
       const title = data.title || data.name || "Untitled";
@@ -140,7 +139,7 @@ export async function POST(request: NextRequest) {
       createdAt: new Date().toISOString(),
     };
 
-    const docRef = await addDoc(collection(db, "topics"), newTopic);
+    const docRef = await firestore.collection("topics").add(newTopic);
 
     return NextResponse.json({ id: docRef.id, ...newTopic, message: "Topic created successfully" }, { status: 201 });
   } catch (error) {

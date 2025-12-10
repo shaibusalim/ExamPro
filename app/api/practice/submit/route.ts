@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
-import { db } from "@/lib/firebase"
-import { collection, addDoc } from "firebase/firestore"
+import { firestore } from "@/lib/firebaseAdmin"
 
 export async function POST(request: NextRequest) {
   try {
@@ -19,7 +18,7 @@ export async function POST(request: NextRequest) {
       questions: body.questions || [],
       createdAt: new Date().toISOString(),
     }
-    const ref = await addDoc(collection(db, "practice_attempts"), payload)
+    const ref = await firestore.collection("practice_attempts").add(payload)
     return NextResponse.json({ attemptId: ref.id })
   } catch (error) {
     console.error("[API/PracticeSubmit] Error:", error)

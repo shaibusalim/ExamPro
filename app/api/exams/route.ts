@@ -1,7 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, doc, getDoc, orderBy } from "firebase/firestore";
 import { firestore } from "@/lib/firebaseAdmin";
 
 export async function GET(request: NextRequest) {
@@ -18,37 +16,38 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const examsRef = collection(db, "exams");
-    const q = query(examsRef, where("createdBy", "==", decoded.userId), orderBy("createdAt", "desc"));
-    const querySnapshot = await getDocs(q);
+    const querySnapshot = await firestore
+      .collection("exams")
+      .where("createdBy", "==", decoded.userId)
+      .orderBy("createdAt", "desc")
+      .get();
 
     const exams = await Promise.all(querySnapshot.docs.map(async (examDoc) => {
-      const examData = examDoc.data();
+      const examData = examDoc.data() as any;
       const classId = examData.classId;
 
-      // Fetch class name and level
-      let className = null;
-      let classLevel = null;
+      let className: string | null = null;
+      let classLevel: string | null = null;
       if (classId) {
-        const classDoc = await getDoc(doc(db, "classes", classId));
-        if (classDoc.exists()) {
-          const classData = classDoc.data();
+        const classDoc = await firestore.collection("classes").doc(String(classId)).get();
+        if (classDoc.exists) {
+          const classData = classDoc.data() as any;
           className = classData.name || null;
-          classLevel = classData.level || null; // Ensure it's explicitly null if not present
+          classLevel = classData.level || null;
         }
       }
 
-      // Count total attempts
-      const examAttemptsRef = collection(db, "exam_attempts");
-      const attemptsQuery = query(examAttemptsRef, where("examId", "==", examDoc.id));
-      const attemptsSnapshot = await getDocs(attemptsQuery);
+      const attemptsSnapshot = await firestore
+        .collection("exam_attempts")
+        .where("examId", "==", examDoc.id)
+        .get();
       const total_attempts = attemptsSnapshot.size;
 
       return {
         id: examDoc.id,
         ...examData,
         class_name: className,
-        level: classLevel || "", // Ensure 'level' is always a string
+        level: classLevel || "",
         total_attempts,
       };
     }));
