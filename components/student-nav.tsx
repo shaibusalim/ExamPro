@@ -3,17 +3,26 @@
 import { useRouter, usePathname } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { LogOut, Home, BookOpen, Trophy, Zap, CheckCircle2, FileText } from "lucide-react"
-import { useState } from "react"
+import { LogOut, Home, BookOpen, Trophy, Zap, CheckCircle2, FileText, Lock as LockIcon } from "lucide-react"
+import { useEffect, useState } from "react"
+import { useAuth } from "@/lib/auth-client"
+import { db } from "@/lib/firebase"
+import { doc, onSnapshot } from "firebase/firestore"
+import { auth } from "@/lib/firebase"
+import { signOut } from "firebase/auth"
+import { Card } from "@/components/ui/card"
 
 export function StudentNav() {
   const router = useRouter()
   const pathname = usePathname()
+  const { user } = useAuth()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
+  const [locked, setLocked] = useState(false)
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token")
+    try { signOut(auth) } catch {}
     router.push("/login")
   }
 
@@ -26,7 +35,22 @@ export function StudentNav() {
     { href: "/student/exams", label: "Exam", icon: FileText },
   ]
 
+  useEffect(() => {
+    if (!user || user.role !== "student") return
+    const ref = doc(db, "users", String(user.userId))
+    const unsub = onSnapshot(ref, (snap) => {
+      const data = snap.data() as any
+      const isLocked = !!data?.lockedDashboard
+      setLocked(isLocked)
+      if (isLocked && pathname !== "/student/dashboard") {
+        router.push("/student/dashboard")
+      }
+    })
+    return () => unsub()
+  }, [user, router, pathname])
+
   return (
+    <>
     <nav className="sticky top-0 z-50 bg-gradient-to-r from-primary/5 to-accent/5 border-b border-primary/10 backdrop-blur-xl shadow-md hover:shadow-lg transition-shadow duration-300">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
@@ -140,5 +164,16 @@ export function StudentNav() {
         )}
       </div>
     </nav>
+    {locked && (
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/70 backdrop-blur-sm">
+        <Card className="p-10 text-center border-red-500/30 bg-card/80">
+          <LockIcon className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl md:text-3xl font-bold mb-2">Dashboard Locked</h2>
+          <p className="text-muted-foreground mb-6">Your account was locked by the admin. Please contact support.</p>
+          <Button onClick={() => router.push("/login")} className="bg-red-600 hover:bg-red-700 text-white">Go to Login</Button>
+        </Card>
+      </div>
+    )}
+    </>
   )
 }

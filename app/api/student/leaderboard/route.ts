@@ -15,13 +15,16 @@ export async function GET(request: NextRequest) {
     const authHeader = request.headers.get("authorization")
     if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
     const token = authHeader.replace("Bearer ", "")
-    const decoded = verifyToken(token)
-    if (!decoded || decoded.role !== "student") return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+  const decoded = verifyToken(token)
+  if (!decoded || decoded.role !== "student") return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
 
-    const currentStudentId = decoded.userId
-    const userDoc = await firestore.collection("users").doc(currentStudentId).get()
-    const userData = userDoc.exists ? (userDoc.data() as any) : null
-    const classLevel = String(userData?.classLevel || "")
+  const currentStudentId = decoded.userId
+  const userDoc = await firestore.collection("users").doc(currentStudentId).get()
+  const userData = userDoc.exists ? (userDoc.data() as any) : null
+  if (userData?.lockedDashboard) {
+    return NextResponse.json({ error: "Dashboard locked" }, { status: 403 })
+  }
+  const classLevel = String(userData?.classLevel || "")
 
     const usersSnap = await firestore.collection("users").get()
     const candidates = usersSnap.docs
@@ -72,4 +75,3 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Failed to fetch leaderboard" }, { status: 500 })
   }
 }
-

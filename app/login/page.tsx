@@ -13,6 +13,8 @@ import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Spinner } from "@/components/ui/spinner"
 import { Eye, EyeOff } from "lucide-react"
+import { auth } from "@/lib/firebase"
+import { signInWithEmailAndPassword } from "firebase/auth"
 
 export default function LoginPage() {
   const router = useRouter()
@@ -50,6 +52,15 @@ export default function LoginPage() {
       } else {
         setError("Login successful, but no token received.");
         return;
+      }
+
+      // Ensure Firebase client SDK is authenticated so Firestore rules allow reads
+      try {
+        await signInWithEmailAndPassword(auth, email, password)
+      } catch (firebaseErr) {
+        // If Firebase client sign-in fails, still proceed with our JWT-based session,
+        // but real-time listeners that rely on Firestore rules may not work.
+        // We keep UX flowing and rely on server API checks.
       }
 
       // Redirect based on role
