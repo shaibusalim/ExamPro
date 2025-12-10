@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { firestore } from "@/lib/firebaseAdmin";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ topicId: string }> }) {
   try {
@@ -10,21 +9,22 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     const { topicId } = await params;
     const limit = parseInt(request.nextUrl.searchParams.get("limit") || "10", 10);
 
-    const questionsRef = collection(db, "questions");
-    const q = query(questionsRef, where("topicId", "==", topicId), where("isPublished", "==", true));
-    const querySnapshot = await getDocs(q);
+    let q = firestore.collection("questions")
+      .where("topicId", "==", topicId)
+      .where("isPublished", "==", true);
+    const querySnapshot = await q.get();
 
     let questionsWithDetails = await Promise.all(
       querySnapshot.docs.map(async (questionDoc) => {
-        const questionData = questionDoc.data();
+        const questionData = questionDoc.data() as any;
         let options: any[] = [];
 
-        if (["MCQ", "True/False"].includes(questionData.questionType)) {
-          const optionsRef = collection(db, "questions", questionDoc.id, "options");
-          const optionsSnapshot = await getDocs(optionsRef);
+        if (["MCQ", "True/False"].includes(String(questionData.questionType))) {
+          const optionsRef = firestore.collection("questions").doc(questionDoc.id).collection("options");
+          const optionsSnapshot = await optionsRef.get();
           options = optionsSnapshot.docs.map(optionDoc => ({
             id: optionDoc.id,
-            ...optionDoc.data(),
+            ...(optionDoc.data() as any),
           }));
         }
 
