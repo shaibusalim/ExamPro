@@ -9,6 +9,10 @@ import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
 import { useAuth } from "@/lib/auth-client"
 import { Users, TrendingUp, Lock, Unlock } from "lucide-react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { useToast } from "@/components/ui/use-toast"
 
 interface AdminStudentSummary {
   id: string
@@ -27,6 +31,22 @@ export default function AdminStudentsPage() {
   const { user, loading: authLoading } = useAuth()
   const [students, setStudents] = useState<AdminStudentSummary[]>([])
   const [loading, setLoading] = useState(true)
+  const [editOpen, setEditOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [currentStudent, setCurrentStudent] = useState<AdminStudentSummary | null>(null)
+  const [editFullName, setEditFullName] = useState("")
+  const [editClassLevel, setEditClassLevel] = useState("")
+  const [pending, setPending] = useState(false)
+  const { toast } = useToast()
+
+  async function reloadStudents() {
+    const token = localStorage.getItem("auth_token") || ""
+    const res = await fetch("/api/admin/students", { headers: { Authorization: `Bearer ${token}` } })
+    if (res.ok) {
+      const data = await res.json()
+      setStudents(Array.isArray(data) ? data : [])
+    }
+  }
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
@@ -76,26 +96,49 @@ export default function AdminStudentsPage() {
     )
   }
 
-  async function deleteStudent(studentId: string) {
+  async function confirmDelete() {
+    if (!currentStudent) return
     const token = localStorage.getItem("auth_token") || ""
-    await fetch(`/api/admin/students/${studentId}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
-    setStudents((prev) => prev.filter((s) => s.id !== studentId))
+    setPending(true)
+    const res = await fetch(`/api/admin/students/${currentStudent.id}`, { method: "DELETE", headers: { Authorization: `Bearer ${token}` } })
+    setPending(false)
+    if (res.ok) {
+      await reloadStudents()
+      toast({ title: "Student deleted", description: `${currentStudent.fullName} has been removed.` })
+    } else {
+      const body = await res.json().catch(() => ({} as any))
+      toast({ title: "Deletion failed", description: body?.error || "Could not delete student.", variant: "destructive" as any })
+    }
+    setDeleteOpen(false)
+    setCurrentStudent(null)
   }
 
-  async function editStudent(studentId: string) {
+  async function submitEdit() {
+    if (!currentStudent) return
     const token = localStorage.getItem("auth_token") || ""
-    const fullName = window.prompt("Enter new full name (leave blank to skip)") || undefined
-    const classLevel = window.prompt("Enter class level (B7/B8, leave blank to skip)") || undefined
     const payload: any = {}
-    if (fullName && fullName.trim()) payload.fullName = fullName.trim()
-    if (classLevel && classLevel.trim()) payload.classLevel = classLevel.trim()
-    if (Object.keys(payload).length === 0) return
-    await fetch(`/api/admin/students/${studentId}`, {
+    if (editFullName.trim()) payload.fullName = editFullName.trim()
+    if (["B7", "B8"].includes(editClassLevel)) payload.classLevel = editClassLevel
+    if (Object.keys(payload).length === 0) {
+      setEditOpen(false)
+      setCurrentStudent(null)
+      return
+    }
+    setPending(true)
+    const res = await fetch(`/api/admin/students/${currentStudent.id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
     })
-    setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, ...payload } : s)))
+    setPending(false)
+    if (res.ok) {
+      setStudents((prev) => prev.map((s) => (s.id === currentStudent.id ? { ...s, ...payload } : s)))
+      toast({ title: "Student updated", description: "Changes saved successfully." })
+    } else {
+      toast({ title: "Update failed", description: "Could not update student.", variant: "destructive" as any })
+    }
+    setEditOpen(false)
+    setCurrentStudent(null)
   }
 
   if (loading || authLoading) {
@@ -233,10 +276,10 @@ export default function AdminStudentsPage() {
                       )}
                     </Button>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline" onClick={() => editStudent(s.id)} className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 transition-all duration-300">
+                      <Button size="sm" variant="outline" onClick={() => { setCurrentStudent(s); setEditFullName(s.fullName || ""); setEditClassLevel(s.classLevel || ""); setEditOpen(true) }} className="border-cyan-500/30 text-cyan-300 hover:bg-cyan-500/20 transition-all duration-300">
                         Edit
                       </Button>
-                      <Button size="sm" variant="outline" onClick={() => deleteStudent(s.id)} className="border-red-500/30 text-red-300 hover:bg-red-500/20 transition-all duration-300">
+                      <Button size="sm" variant="outline" onClick={() => { setCurrentStudent(s); setDeleteOpen(true) }} className="border-red-500/30 text-red-300 hover:bg-red-500/20 transition-all duration-300">
                         Delete
                       </Button>
                     </div>
@@ -246,6 +289,43 @@ export default function AdminStudentsPage() {
             ))}
           </div>
         )}
+        {/* Edit Dialog */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit Student</DialogTitle>
+              <DialogDescription>Update the student's details.</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input id="fullName" value={editFullName} onChange={(e) => setEditFullName(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="classLevel">Class Level (B7/B8)</Label>
+                <Input id="classLevel" value={editClassLevel} onChange={(e) => setEditClassLevel(e.target.value.toUpperCase())} placeholder="B7 or B8" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setEditOpen(false); setCurrentStudent(null) }} disabled={pending}>Cancel</Button>
+              <Button onClick={submitEdit} className="bg-cyan-600 hover:bg-cyan-500 text-white" disabled={pending}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Delete Confirm Dialog */}
+        <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Student</DialogTitle>
+              <DialogDescription>This action will remove the student account. This cannot be undone.</DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setDeleteOpen(false); setCurrentStudent(null) }} disabled={pending}>Cancel</Button>
+              <Button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700 text-white" disabled={pending}>Delete</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   )

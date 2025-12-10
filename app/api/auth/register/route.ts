@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { auth, db } from "@/lib/firebase";
+import { auth } from "@/lib/firebase";
+import { firestore as adminFirestore } from "@/lib/firebaseAdmin";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
 import { generateToken } from "@/lib/auth"; // Keep generateToken for session management
 
 export async function POST(request: NextRequest) {
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     const user = userCredential.user;
 
-    // Store additional user details in Firestore
+    // Store additional user details in Firestore (using Admin SDK to bypass client rules)
     const userData = {
       email: user.email,
       fullName,
@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
       studentId: studentId || null,
       createdAt: new Date().toISOString(),
     };
-    await setDoc(doc(db, "users", user.uid), userData);
+    await adminFirestore.collection("users").doc(user.uid).set(userData, { merge: true });
 
     console.log("[Firebase] User created successfully:", user.uid);
 
