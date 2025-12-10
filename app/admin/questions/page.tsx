@@ -174,6 +174,28 @@ export default function QuestionsPage() {
     }
   }
 
+  async function deleteQuestion(id: string) {
+    if (!id) return
+    if (!window.confirm("Delete this question? This cannot be undone.")) return
+    setError("")
+    setSuccess("")
+    try {
+      const res = await fetch(`/api/admin/questions/${id}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as any))
+        setError(body?.error || "Failed to delete question")
+        return
+      }
+      setQuestions((prev) => prev.filter((q) => q.id !== id))
+      setSuccess("Question deleted")
+    } catch (e) {
+      setError("Failed to delete question")
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-blue-950">
@@ -608,6 +630,11 @@ export default function QuestionsPage() {
                           <p className="text-slate-300">{question.explanation}</p>
                         </div>
                       )}
+                      <div className="flex gap-3 pt-4">
+                        <Button onClick={() => deleteQuestion(question.id)} className="bg-red-600 hover:bg-red-700 text-white">
+                          Delete
+                        </Button>
+                      </div>
                     </div>
                   </Card>
                 ))}
