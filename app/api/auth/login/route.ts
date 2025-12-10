@@ -12,6 +12,7 @@ interface FirestoreUser {
   classLevel?: string;
   studentId?: string;
   createdAt: string;
+  isApproved?: boolean;
 }
 
 export async function POST(request: NextRequest) {
@@ -99,9 +100,11 @@ export async function POST(request: NextRequest) {
       ...firestoreData,
     };
 
-    // Map legacy teacher role to admin
     const role = user.role === 'teacher' ? 'admin' : user.role;
-    // Generate token
+    if (!firestoreData.isApproved) {
+      await auth.signOut();
+      return NextResponse.json({ error: "Account pending approval" }, { status: 403 });
+    }
     const token = generateToken(user.id, user.email || '', role);
 
     // Get client IP for logging

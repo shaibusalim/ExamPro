@@ -23,6 +23,7 @@ interface AdminStudentSummary {
   studentId?: string
   lockedDashboard?: boolean
   lockedExams?: boolean
+  isApproved?: boolean
   totalExamsAttempted: number
   averageScore: number
 }
@@ -97,6 +98,21 @@ export default function AdminStudentsPage() {
           : s,
       ),
     )
+  }
+
+  async function updateApproval(studentId: string, approved: boolean) {
+    const token = localStorage.getItem("auth_token") || ""
+    const res = await fetch(`/api/admin/students/${studentId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ isApproved: approved }),
+    })
+    if (res.ok) {
+      setStudents((prev) => prev.map((s) => (s.id === studentId ? { ...s, isApproved: approved } : s)))
+      toast({ title: approved ? "Student approved" : "Approval revoked" })
+    } else {
+      toast({ title: "Update failed", description: "Could not update approval.", variant: "destructive" as any })
+    }
   }
 
   async function confirmDelete() {
@@ -247,6 +263,9 @@ export default function AdminStudentsPage() {
                             <Badge className="bg-green-500/20 text-green-300 border border-green-500/30">
                               {s.averageScore}% avg
                             </Badge>
+                            <Badge className={s.isApproved ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30" : "bg-yellow-500/20 text-yellow-300 border border-yellow-500/30"}>
+                              {s.isApproved ? "Approved" : "Pending Approval"}
+                            </Badge>
                             {s.lockedDashboard && (
                               <Badge className="bg-red-500/20 text-red-300 border border-red-500/30">
                                 <Lock className="w-3 h-3 mr-1" />
@@ -262,6 +281,14 @@ export default function AdminStudentsPage() {
                           </div>
                         </div>
                         <div className="flex flex-wrap gap-2 md:flex-col">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => updateApproval(s.id, !s.isApproved)}
+                            className="border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 transition-all duration-300"
+                          >
+                            {s.isApproved ? "Revoke Approval" : "Approve"}
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"

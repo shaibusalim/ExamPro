@@ -10,6 +10,7 @@ interface AdminStudentSummary {
   studentId?: string
   lockedDashboard?: boolean
   lockedExams?: boolean
+  isApproved?: boolean
   totalExamsAttempted: number
   averageScore: number
 }
@@ -73,6 +74,7 @@ export async function GET(request: NextRequest) {
         studentId: u.studentId || undefined,
         lockedDashboard: !!u.lockedDashboard,
         lockedExams: !!u.lockedExams,
+        isApproved: !!u.isApproved,
         totalExamsAttempted: attempted,
         averageScore: attempted > 0 ? parseFloat((totalScore / attempted).toFixed(2)) : 0,
       })

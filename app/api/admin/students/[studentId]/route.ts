@@ -71,6 +71,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const payload: Record<string, any> = {}
     if (typeof body.fullName === "string" && body.fullName.trim()) payload.fullName = body.fullName.trim()
     if (typeof body.classLevel === "string" && ["B7", "B8"].includes(body.classLevel)) payload.classLevel = body.classLevel
+    if (typeof body.isApproved === "boolean") payload.isApproved = body.isApproved
 
     if (Object.keys(payload).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 })

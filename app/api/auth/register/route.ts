@@ -54,19 +54,17 @@ export async function POST(request: NextRequest) {
       role: "student",
       classLevel: classLevel || null,
       studentId: studentId || null,
+      isApproved: false,
       createdAt: new Date().toISOString(),
     };
     await adminFirestore.collection("users").doc(user.uid).set(userData, { merge: true });
 
     console.log("[Firebase] User created successfully:", user.uid);
 
-    // Generate a session token (if needed for server-side logic, otherwise client-side Firebase session is enough)
-    // For now, we'll keep the generateToken but it might need to be adapted or replaced
-    const token = generateToken(user.uid, user.email || '', "student"); // Adapt generateToken for Firebase user
 
     const response = NextResponse.json(
       {
-        message: "Registration successful",
+        message: "Registration submitted. Awaiting admin approval",
         user: {
           id: user.uid,
           email: user.email,
@@ -77,13 +75,7 @@ export async function POST(request: NextRequest) {
       { status: 201 },
     );
 
-    // Set a cookie for session management. Consider using Firebase ID tokens for more robust server-side verification.
-    response.cookies.set("auth_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 24 * 60 * 60, // 24 hours
-    });
+
 
     return response;
   } catch (error: any) {
