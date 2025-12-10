@@ -15,8 +15,7 @@ import { Badge } from "@/components/ui/badge"
 import { AdminNav } from "@/components/admin-nav"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { BookOpen, Plus, Eye, Image as ImageIcon } from "lucide-react"
-import { storage } from "@/lib/firebase"
-import { uploadBytes, ref, getDownloadURL } from "firebase/storage"
+// removed direct firebase storage imports; will lazy-import at runtime
 import { type Question } from "@/lib/types"
 
 interface Topic {
@@ -434,6 +433,8 @@ export default function QuestionsPage() {
                         setError("")
                         setIsUploadingImage(true)
                         try {
+                          const { storage } = await import("@/lib/firebase")
+                          const { uploadBytes, ref, getDownloadURL } = await import("firebase/storage")
                           const storageRef = ref(storage, `question_images/${file.name}`)
                           const snapshot = await uploadBytes(storageRef, file)
                           const downloadURL = await getDownloadURL(snapshot.ref)
