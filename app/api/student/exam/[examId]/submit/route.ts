@@ -106,22 +106,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
         const stem = String((q as any).questionText || (q as any).question_text || (q as any).question || "");
         const correct = String((q as any).correctAnswer || (q as any).explanation || "");
         const textResp = String(response.textResponse || "");
-        const rawScore = await gradeTheoryAnswer(stem, textResp, correct, 5);
-        if (questionMarks === 4) {
-          if (rawScore >= 5) {
-            marksAwarded = 4;
-          } else if (rawScore >= 3) {
-            marksAwarded = 3;
-          } else if (rawScore >= 2) {
-            marksAwarded = 2;
-          } else if (rawScore >= 1) {
-            marksAwarded = 1;
-          } else {
-            marksAwarded = 0;
-          }
-        } else {
-          marksAwarded = Math.round((rawScore / 5) * questionMarks);
-        }
+        const rawScore = await gradeTheoryAnswer(stem, textResp, correct, questionMarks);
+        marksAwarded = rawScore;
         totalScore += marksAwarded;
       }
 

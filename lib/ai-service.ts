@@ -424,7 +424,7 @@ export async function gradeTheoryAnswer(
   if (useLLM) {
     try {
       const promptParts = [
-        'You are grading a short theory answer for Basic 7/8 Computing. Score an integer from 0 to 5 only. Guidelines: 5 = fully correct and complete; 4 or 3 = close, mostly correct with minor gaps; 2 or 1 = partial or vague; 0 = irrelevant or wrong. Reply with the number only.',
+        `You are grading a short theory answer for Basic 7/8 Computing. Score an integer from 0 to ${maxMarks} only. Guidelines: ${maxMarks} = fully correct and complete; high scores = mostly correct with minor gaps; mid scores = partial or vague; 0 = irrelevant or wrong. Reply with the number only.`,
         'Question: ' + String(question || ''),
         correctAnswer ? 'Expected points: ' + String(correctAnswer || '') : '',
         'Student answer: ' + String(studentAnswer || ''),
@@ -463,10 +463,12 @@ export async function gradeTheoryAnswer(
     if (ta.has(t)) inter++;
   });
   const sim = tb.size > 0 ? inter / tb.size : 0;
-  if (sim >= 0.8) return clamp(5);
-  if (sim >= 0.5) return clamp(4);
-  if (sim >= 0.35) return clamp(3);
-  if (sim >= 0.2) return clamp(2);
-  if (sim >= 0.1) return clamp(1);
-  return 0;
+  const scoreFromSim =
+    sim >= 0.8 ? maxMarks :
+    sim >= 0.5 ? Math.round(0.8 * maxMarks) :
+    sim >= 0.35 ? Math.round(0.6 * maxMarks) :
+    sim >= 0.2 ? Math.round(0.4 * maxMarks) :
+    sim >= 0.1 ? Math.round(0.2 * maxMarks) :
+    0;
+  return clamp(scoreFromSim);
 }

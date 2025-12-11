@@ -15,9 +15,10 @@ Generate a set of exam questions for Basic 7–8 ICT based on the Ghana GES curr
 Requirements:
 - 30 Objective questions (multiple choice)
 - 10 Theory questions
-- Total marks = 70
+- Total marks = 100
 - Objective questions = 1 mark each
-- Theory questions = 4 marks each
+- Theory questions = variable marks per question (not all equal)
+- Ensure the sum of all question marks equals exactly 100
 - Include diagrams or image descriptions ONLY when needed
 - Return ONLY JSON in this format:
 
@@ -34,7 +35,8 @@ Requirements:
   "theory": [
     {
       "question": "",
-      "marks": 4,
+      "correctAnswer": "",
+      "marks": 7,
       "media": null
     }
   ]

@@ -45,16 +45,57 @@ export async function GET(request: NextRequest, context: { params: Promise<{ exa
       return NextResponse.json({ error: "No attempt found" }, { status: 404 });
     }
 
-    const score = Number(best.score || 0);
-    const totalMarks = Number(best.totalMarks || 0);
-    const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 100) : Number(best.percentage || 0);
-    const submittedAt = best.submittedAt?.toDate?.() ? best.submittedAt.toDate().toISOString() : new Date().toISOString();
+  const score = Number(best.score || 0);
+  const totalMarks = Number(best.totalMarks || 0);
+  const percentage = totalMarks > 0 ? Math.round((score / totalMarks) * 100) : Number(best.percentage || 0);
+  const submittedAt = best.submittedAt?.toDate?.() ? best.submittedAt.toDate().toISOString() : new Date().toISOString();
+    const answersObj = (best.answers || {}) as Record<string, any>;
+    const questionIds = Object.keys(answersObj);
+    const answers: any[] = [];
+    for (const qid of questionIds) {
+      const ans = answersObj[qid] || {};
+      // Load question to extract text, type, marks, and correct answer
+      const qTopDoc = await firestore.collection("questions").doc(qid).get();
+      let qData: any = null;
+      if (qTopDoc.exists) {
+        qData = qTopDoc.data();
+      } else {
+        const eqSnap = await firestore.collection("exams").doc(examId).collection("questions").doc(qid).get();
+        if (eqSnap.exists) qData = eqSnap.data();
+      }
+      const qTypeRaw = String(qData?.questionType || qData?.type || qData?.question_type || "mcq").toLowerCase();
+      const typeMap: Record<string, string> = { mcq: "mcq", "true_false": "true_false", essay: "essay", theory: "essay" };
+      const qType = typeMap[qTypeRaw] || "mcq";
+      const marks = Number(qData?.marks || 1);
+      const questionText = String(qData?.questionText || qData?.question || qData?.question_text || "");
+
+      let correctAnswer: string | null = null;
+      if (qType === "mcq" || qType === "true_false") {
+        const optSnap = await firestore.collection("questions").doc(qid).collection("options").get();
+        const correctOpt = optSnap.docs.find((d) => (d.data() as any).isCorrect === true);
+        correctAnswer = correctOpt ? String((correctOpt.data() as any).optionText || "") : null;
+      } else {
+        correctAnswer = String(qData?.correctAnswer || qData?.explanation || "") || null;
+      }
+
+      answers.push({
+        questionId: qid,
+        question_text: questionText,
+        question_type: qType,
+        marks,
+        marks_awarded: Number(ans.marksAwarded || 0),
+        is_correct: !!ans.isCorrect,
+        student_answer: ans.textResponse ?? ans.selectedOptionText ?? ans.selectedOptionId ?? null,
+        correct_answer: correctAnswer,
+      });
+    }
 
     return NextResponse.json({
       score,
       total_marks: totalMarks,
       percentage,
       submitted_at: submittedAt,
+      answers,
     });
   } catch (error) {
     console.error("[API/Student/Exam/Result] Error:", error);

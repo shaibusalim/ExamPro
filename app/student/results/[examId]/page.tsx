@@ -15,6 +15,16 @@ interface Result {
   percentage: number
   submitted_at: string
   feedback?: string
+  answers?: Array<{
+    questionId: string
+    question_text: string
+    question_type: string
+    marks: number
+    marks_awarded: number
+    is_correct: boolean
+    student_answer: string | null
+    correct_answer: string | null
+  }>
 }
 
 export default function ResultsPage() {
@@ -101,7 +111,6 @@ export default function ResultsPage() {
           <p className="text-muted-foreground">Your performance summary</p>
         </div>
 
-        {/* Score Card */}
         <Card className="p-12 mb-8 text-center space-y-6">
           <div>
             <div className={`text-6xl font-bold ${isPassed ? "text-green-600" : "text-red-600"}`}>
@@ -130,7 +139,37 @@ export default function ResultsPage() {
           )}
         </Card>
 
-        {/* Action Buttons */}
+        {Array.isArray(result.answers) && result.answers.length > 0 && (
+          <div className="space-y-4">
+            {result.answers.map((a, idx) => {
+              const correct = !!a.is_correct
+              const statusText = correct ? "Correct" : "Wrong"
+              const statusColor = correct ? "text-green-600" : "text-red-600"
+              return (
+                <Card key={`${a.questionId}-${idx}`} className="p-6">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <div className="font-semibold mb-2">{a.question_text}</div>
+                      <div className="text-sm text-muted-foreground mb-4">Marks: {a.marks_awarded}/{a.marks}</div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                          <div className="text-xs text-muted-foreground">Your answer</div>
+                          <div className="text-sm">{a.student_answer ?? "—"}</div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Correct answer</div>
+                          <div className="text-sm">{a.correct_answer ?? "—"}</div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className={`text-sm font-bold ${statusColor}`}>{statusText}</div>
+                  </div>
+                </Card>
+              )
+            })}
+          </div>
+        )}
+
         <div className="flex gap-4 justify-center">
           <Button variant="outline" className="gap-2 bg-transparent">
             <Download className="w-4 h-4" />
