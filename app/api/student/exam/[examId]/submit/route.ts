@@ -104,9 +104,12 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
       }
       } else if (typeNorm === "theory" || typeNorm === "essay") {
         const stem = String((q as any).questionText || (q as any).question_text || (q as any).question || "");
-        const correct = String((q as any).correctAnswer || (q as any).explanation || "");
+        const correctRaw = (q as any).correctAnswer;
+        const correct = Array.isArray(correctRaw)
+          ? String(correctRaw.filter(Boolean).join("; "))
+          : String(correctRaw || (q as any).explanation || "");
         const textResp = String(response.textResponse || "");
-        const rawScore = await gradeTheoryAnswer(stem, textResp, correct, questionMarks);
+        const rawScore = await gradeTheoryAnswer(stem, textResp, correct, questionMarks, (q as any).rubric);
         marksAwarded = rawScore;
         totalScore += marksAwarded;
       }

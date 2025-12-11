@@ -75,7 +75,12 @@ export async function GET(request: NextRequest, context: { params: Promise<{ exa
         const correctOpt = optSnap.docs.find((d) => (d.data() as any).isCorrect === true);
         correctAnswer = correctOpt ? String((correctOpt.data() as any).optionText || "") : null;
       } else {
-        correctAnswer = String(qData?.correctAnswer || qData?.explanation || "") || null;
+        const cr = (qData as any)?.correctAnswer;
+        if (Array.isArray(cr)) {
+          correctAnswer = String(cr.filter(Boolean).join('; ')) || null;
+        } else {
+          correctAnswer = String(cr || (qData as any)?.explanation || "") || null;
+        }
       }
 
       answers.push({

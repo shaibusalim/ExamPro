@@ -6,14 +6,21 @@ interface QuestionOption {
   isCorrect: boolean;
 }
 
+interface RubricKeyPoint {
+  point: string;
+  synonyms?: string[];
+  weight?: number;
+}
+
 interface Question {
   questionText: string;
   questionType: string;
   marks?: number;
-  correctAnswer?: string;
+  correctAnswer?: string | string[];
   explanation?: string;
   imageUrl?: string;
-  options?: QuestionOption[];
+  options?: QuestionOption[] | string[];
+  rubric?: { keyPoints?: RubricKeyPoint[] };
 }
 
 export async function POST(req: NextRequest) {
@@ -56,11 +63,11 @@ export async function POST(req: NextRequest) {
         continue;
       }
 
-      const rawAnswer = q.correctAnswer ?? q.explanation ?? q.answer ?? null;
-      const correctAnswer: string | null = typeof rawAnswer === 'string' ? rawAnswer : null;
+      const rawAnswer = (q as any).correctAnswer ?? (q as any).explanation ?? (q as any).answer ?? null;
+      const correctAnswer = Array.isArray(rawAnswer) || typeof rawAnswer === 'string' ? rawAnswer : null;
       const marks: number = typeof q.marks === 'number' ? q.marks : (normalizedType === 'essay' ? 4 : 1);
 
-      batch.set(qRef, {
+      const baseDoc: any = {
         topicId: topicIds[0], // assign first topic
         questionText,
         questionType: normalizedType,
@@ -70,7 +77,11 @@ export async function POST(req: NextRequest) {
         imageUrl: typeof q.imageUrl === 'string' ? q.imageUrl : null,
         classLevel,
         createdAt: new Date(),
-      });
+      };
+      if ((q as any).rubric && Array.isArray((q as any).rubric.keyPoints)) {
+        baseDoc.rubric = { keyPoints: (q as any).rubric.keyPoints };
+      }
+      batch.set(qRef, baseDoc);
 
       // If multiple-choice options exist
       if (normalizedType === 'mcq' || normalizedType === 'true_false') {
@@ -80,8 +91,9 @@ export async function POST(req: NextRequest) {
           if (typeof rawOpts[0] === 'string') {
             const optStrings = rawOpts as string[];
             let correctIndex: number | null = null;
-            if (typeof correctAnswer === 'string') {
-              const ans = correctAnswer.trim().toLowerCase();
+            const ansStr = typeof correctAnswer === 'string' ? correctAnswer : null;
+            if (typeof ansStr === 'string') {
+              const ans = ansStr.trim().toLowerCase();
               const letters = ['a', 'b', 'c', 'd'];
               if (letters.includes(ans)) {
                 correctIndex = letters.indexOf(ans);
@@ -101,7 +113,7 @@ export async function POST(req: NextRequest) {
             opts = rawOpts.map((o: any) => ({ text: String(o.text || o.optionText || ''), isCorrect: !!o.isCorrect }));
             // If none marked correct but we have an answerText, mark match
             if (!opts.some((o) => o.isCorrect) && typeof correctAnswer === 'string') {
-              const ans = correctAnswer.toLowerCase();
+              const ans = (correctAnswer as string).toLowerCase();
               opts = opts.map((o) => ({ ...o, isCorrect: o.text.toLowerCase() === ans }));
             }
           }

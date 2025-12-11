@@ -418,9 +418,38 @@ export async function gradeTheoryAnswer(
   studentAnswer: string,
   correctAnswer?: string,
   maxMarks: number = 10,
+  rubric?: { keyPoints?: Array<{ point: string; synonyms?: string[]; weight?: number }> }
 ): Promise<number> {
   const useLLM = !!process.env.OPENAI_API_KEY;
   const clamp = (n: number) => Math.max(0, Math.min(maxMarks, Math.round(n)));
+  const sa = String(studentAnswer || '').toLowerCase();
+  if (rubric && Array.isArray(rubric.keyPoints) && rubric.keyPoints.length > 0) {
+    const pts = rubric.keyPoints;
+    let totalWeight = 0;
+    for (const kp of pts) totalWeight += Number(kp.weight || 1);
+    if (totalWeight <= 0) totalWeight = pts.length;
+    let earned = 0;
+    for (const kp of pts) {
+      const w = Number(kp.weight || 1);
+      const base = String(kp.point || '').toLowerCase();
+      const syns = Array.isArray(kp.synonyms) ? kp.synonyms.map(s => String(s || '').toLowerCase()) : [];
+      const candidates = [base, ...syns].filter(Boolean);
+      let match = false;
+      for (const c of candidates) {
+        if (!c) continue;
+        const terms = c.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+        let hits = 0;
+        for (const t of terms) {
+          if (t.length < 3) continue;
+          if (sa.includes(t)) hits++;
+        }
+        if (hits >= Math.max(1, Math.ceil(terms.length * 0.4))) { match = true; break; }
+      }
+      if (match) earned += w;
+    }
+    const scaled = totalWeight > 0 ? (earned / totalWeight) * maxMarks : 0;
+    return clamp(scaled);
+  }
   if (useLLM) {
     try {
       const promptParts = [
@@ -441,7 +470,7 @@ export async function gradeTheoryAnswer(
       if (!Number.isNaN(num)) return clamp(num);
     } catch {}
   }
-  const a = String(studentAnswer || '').toLowerCase();
+  const a = sa;
   const b = String(correctAnswer || '').toLowerCase();
   function tokens(s: string) {
     return new Set(s.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean));

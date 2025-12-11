@@ -617,12 +617,42 @@ export default function QuestionsPage() {
                           </ul>
                         </div>
                       ) : (
-                        question.correctAnswer && (
+                        (Array.isArray((question as any).correctAnswer) || question.correctAnswer) && (
                           <div className="mt-3 text-sm text-slate-300 bg-slate-900/30 p-3 rounded-lg">
-                            <p className="font-semibold text-slate-200">Correct Answer:</p>
-                            <p className="text-green-300 mt-1">{question.correctAnswer}</p>
+                            <p className="font-semibold text-slate-200 mb-2">Correct Answers:</p>
+                            {Array.isArray((question as any).correctAnswer) ? (
+                              <ul className="list-disc pl-5 space-y-1">
+                                {((question as any).correctAnswer as string[]).filter(Boolean).map((ans, i) => (
+                                  <li key={i} className="text-green-300">{ans}</li>
+                                ))}
+                              </ul>
+                            ) : (
+                              <p className="text-green-300 mt-1">{String(question.correctAnswer)}</p>
+                            )}
                           </div>
                         )
+                      )}
+                      {((question as any).rubric && Array.isArray((question as any).rubric.keyPoints) && (question as any).rubric.keyPoints.length > 0) && (
+                        <div className="mt-3 text-sm text-slate-300 bg-slate-900/30 p-3 rounded-lg">
+                          <p className="font-semibold text-slate-200 mb-2">Key Points (Rubric):</p>
+                          <div className="space-y-2">
+                            {((question as any).rubric.keyPoints as Array<any>).map((kp, i) => (
+                              <div key={i} className="border border-blue-500/20 rounded-md p-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="font-medium text-slate-200">{String(kp.point || "")}</div>
+                                  <Badge className="bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">{Number(kp.weight || 1)} pt</Badge>
+                                </div>
+                                {Array.isArray(kp.synonyms) && kp.synonyms.length > 0 && (
+                                  <div className="mt-2 flex flex-wrap gap-1">
+                                    {kp.synonyms.map((s: string, idx: number) => (
+                                      <span key={idx} className="px-2 py-0.5 rounded-full text-xs bg-slate-800/50 border border-blue-500/20 text-slate-300">{s}</span>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       )}
                       {question.explanation && (
                         <div className="mt-3 text-sm text-slate-300 bg-slate-900/30 p-3 rounded-lg">
