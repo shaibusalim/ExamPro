@@ -19,6 +19,11 @@ export function StudentNav() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [hoveredLink, setHoveredLink] = useState<string | null>(null)
   const [locked, setLocked] = useState(false)
+  const isStudent = !!user && user.role === "student"
+
+  if (!isStudent) {
+    return null
+  }
 
   const handleLogout = () => {
     localStorage.removeItem("auth_token")
@@ -36,7 +41,6 @@ export function StudentNav() {
   ]
 
   useEffect(() => {
-    if (!user || user.role !== "student") return
     const ref = doc(db, "users", String(user.userId))
     const unsub = onSnapshot(ref, (snap) => {
       const data = snap.data() as any
@@ -149,17 +153,28 @@ export function StudentNav() {
                 </Link>
               )
             })}
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive/70 hover:text-destructive hover:bg-destructive/10 mt-3 rounded-lg"
-              onClick={() => {
-                handleLogout()
-                setIsMenuOpen(false)
-              }}
-            >
-              <LogOut className="h-4 w-4 mr-3" />
-              Logout
-            </Button>
+            {isStudent ? (
+              <Button
+                variant="ghost"
+                className="w-full justify-start text-destructive/70 hover:text-destructive hover:bg-destructive/10 mt-3 rounded-lg"
+                onClick={() => {
+                  handleLogout()
+                  setIsMenuOpen(false)
+                }}
+              >
+                <LogOut className="h-4 w-4 mr-3" />
+                Logout
+              </Button>
+            ) : (
+              <Link href="/login" onClick={() => setIsMenuOpen(false)}>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start mt-3 rounded-lg"
+                >
+                  Login
+                </Button>
+              </Link>
+            )}
           </div>
         )}
       </div>

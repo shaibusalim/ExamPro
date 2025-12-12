@@ -33,13 +33,16 @@ export default function ResultsPage() {
   const [result, setResult] = useState<Result | null>(null)
   const [loading, setLoading] = useState(true)
   const [studentName, setStudentName] = useState<string>("")
+  const [unauthorized, setUnauthorized] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
     if (!token) {
+      setUnauthorized(true)
       router.push("/login")
       return
     }
+    setUnauthorized(false)
     async function loadResult() {
       try {
         const headers = { Authorization: `Bearer ${token}` }
@@ -100,7 +103,7 @@ export default function ResultsPage() {
     loadResult()
   }, [router])
 
-  if (loading) {
+  if (unauthorized || loading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>
   }
 

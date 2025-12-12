@@ -1,11 +1,13 @@
 "use client"
 
 import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
 import { AdminNav } from "@/components/admin-nav"
 import { Card } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
+import { useAuth } from "@/lib/auth-client"
 
 interface Attempt {
   examId: string
@@ -24,15 +26,23 @@ interface StudentScoreRow {
 }
 
 export default function AdminScoresPage() {
+  const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [b7, setB7] = useState<StudentScoreRow[]>([])
   const [b8, setB8] = useState<StudentScoreRow[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
+    const token = localStorage.getItem("auth_token")
+    if (!token) {
+      router.push("/login")
+      setLoading(false)
+      return
+    }
+
     async function load() {
       setLoading(true)
       try {
-        const token = localStorage.getItem("auth_token")
         const headers = { Authorization: `Bearer ${token}` }
         const [r7, r8] = await Promise.all([
           fetch(`/api/admin/scores?classLevel=B7`, { headers }),
@@ -49,10 +59,18 @@ export default function AdminScoresPage() {
         setLoading(false)
       }
     }
-    load()
-  }, [])
 
-  if (loading) {
+    if (!authLoading) {
+      if (!user || user.role !== "admin") {
+        router.push("/login")
+        setLoading(false)
+        return
+      }
+      load()
+    }
+  }, [router, authLoading, user])
+
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Spinner />
@@ -123,4 +141,3 @@ export default function AdminScoresPage() {
     </div>
   )
 }
-

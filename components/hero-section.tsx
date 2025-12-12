@@ -3,9 +3,10 @@
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
-import { ArrowRight, Users, CheckCircle2, Sparkles, BarChart3 } from "lucide-react"
+import { ArrowRight, Users, CheckCircle2, Sparkles, BarChart3, Play } from "lucide-react"
 import { useState, useEffect } from "react"
 import { AnimatedGrid, TypewriterText } from "./hero-animations"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import img1 from "@/images/img1.jpg"
 import img2 from "@/images/img2.jpg"
 import img3 from "@/images/img3.jpg"
@@ -20,6 +21,7 @@ export function HeroSection() {
   ]
   const [currentTextIndex, setCurrentTextIndex] = useState(0)
   const [bgIndex, setBgIndex] = useState(0)
+  const [openDemo, setOpenDemo] = useState(false)
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -75,27 +77,25 @@ export function HeroSection() {
             curriculum for Basic 7 & 8 students with real-time scoring and instant feedback.
           </p>
 
-          {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row gap-4 pt-6 animate-slide-up-delay">
-            <Link href="/register?role=teacher">
+            <Link href="/register">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/50 text-white border-0 px-8 group w-full sm:w-auto transition-all duration-300 hover:scale-105"
               >
-                For Teachers
+                Get Started
                 <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
               </Button>
             </Link>
-            <Link href="/register?role=student">
-              <Button
-                size="lg"
-                variant="outline"
-                className="px-8 group hover:bg-secondary/10 bg-transparent w-full sm:w-auto transition-all duration-300 hover:scale-105 border-primary/50"
-              >
-                For Students
-                <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              variant="outline"
+              onClick={() => setOpenDemo(true)}
+              className="px-8 group hover:bg-secondary/10 bg-transparent w-full sm:w-auto transition-all duration-300 hover:scale-105 border-primary/50"
+            >
+              <Play className="w-4 h-4 mr-2" />
+              Watch Demo
+            </Button>
           </div>
 
           {/* Social Proof */}
@@ -108,6 +108,12 @@ export function HeroSection() {
               <CheckCircle2 className="w-5 h-5 text-accent" />
               <span>100% GES Aligned</span>
             </div>
+          </div>
+          <div className="flex flex-wrap gap-3 pt-4 text-xs text-gray-300">
+            <span className="glass-effect px-3 py-2 rounded-lg backdrop-blur-md border border-white/10">Springfield School</span>
+            <span className="glass-effect px-3 py-2 rounded-lg backdrop-blur-md border border-white/10">Unity Academy</span>
+            <span className="glass-effect px-3 py-2 rounded-lg backdrop-blur-md border border-white/10">Greenfield College</span>
+            <span className="glass-effect px-3 py-2 rounded-lg backdrop-blur-md border border-white/10">Starlight High</span>
           </div>
         </div>
 
@@ -193,6 +199,31 @@ export function HeroSection() {
         </div>
         </div>
       </div>
+      <Dialog open={openDemo} onOpenChange={setOpenDemo}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Product Demo</DialogTitle>
+          </DialogHeader>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="relative w-full h-48 md:h-64 rounded-lg overflow-hidden">
+              <Image src={img2} alt="Dashboard Preview" fill className="object-cover" />
+            </div>
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Explore creating secure, curriculum‑aligned exams with instant analytics. Try a sample flow now.
+              </p>
+              <div className="flex gap-3">
+                <Link href="/demo-exams">
+                  <Button>Try Sample Quiz</Button>
+                </Link>
+                <Link href="/register">
+                  <Button variant="outline">Get Started</Button>
+                </Link>
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </section>
   )
 }

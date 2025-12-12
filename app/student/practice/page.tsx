@@ -52,13 +52,16 @@ export default function PracticePage() {
   const [practice, setPractice] = useState<PracticeState | null>(null)
   const [loading, setLoading] = useState(true)
   const [userClassLevel, setUserClassLevel] = useState<string>("")
+  const [unauthorized, setUnauthorized] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
     if (!token) {
+      setUnauthorized(true)
       router.push("/login")
       return
     }
+    setUnauthorized(false)
 
     const fetchPracticeData = async () => {
       setLoading(true)
@@ -155,6 +158,14 @@ export default function PracticePage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  if (unauthorized) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5">
+        <Spinner />
+      </div>
+    )
   }
 
   if (!practice) {

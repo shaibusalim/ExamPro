@@ -17,12 +17,19 @@ interface StudentScore {
 export default function LeaderboardPage() {
   const [students, setStudents] = useState<StudentScore[]>([])
   const [loading, setLoading] = useState(true)
+  const [checked, setChecked] = useState(false)
 
   useEffect(() => {
     async function load() {
       setLoading(true)
       try {
         const token = localStorage.getItem("auth_token")
+        if (!token) {
+          setChecked(false)
+          window.location.replace("/login")
+          return
+        }
+        setChecked(true)
         const res = await fetch("/api/student/leaderboard", { headers: { Authorization: `Bearer ${token}` } })
         if (!res.ok) {
           setStudents([])
@@ -40,12 +47,8 @@ export default function LeaderboardPage() {
     load()
   }, [])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Spinner />
-      </div>
-    )
+  if (!checked || loading) {
+    return null
   }
 
   return (

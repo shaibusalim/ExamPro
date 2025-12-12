@@ -41,13 +41,16 @@ export default function ExamPage() {
   const timerRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const [error, setError] = useState("")
   const [questionLocking, setQuestionLocking] = useState(false)
+  const [unauthorized, setUnauthorized] = useState(true)
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
     if (!token) {
+      setUnauthorized(true)
       router.push("/login")
       return
     }
+    setUnauthorized(false)
 
     // Start exam
     fetch(`/api/student/exam/${examId}/start`, {
@@ -161,7 +164,7 @@ export default function ExamPage() {
     }
   }, [])
 
-  if (loading) {
+  if (unauthorized || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <Spinner />

@@ -11,6 +11,7 @@ import { Spinner } from "@/components/ui/spinner"
 import { StudentNav } from "@/components/student-nav"
 import { Separator } from "@/components/ui/separator"
 import { ListPlus, Target, Lightbulb, TrendingUp, Award, Zap, BookOpen, ArrowRight, Lock as LockIcon } from "lucide-react"
+import { useAuth } from "@/lib/auth-client"
 
 interface Exam {
   id: string
@@ -40,19 +41,23 @@ interface StudentAnalytics {
 
 export default function StudentDashboard() {
   const router = useRouter()
+  const { user, loading: authLoading } = useAuth()
   const [exams, setExams] = useState<Exam[]>([])
   const [profile, setProfile] = useState<StudentProfile | null>(null)
   const [analytics, setAnalytics] = useState<StudentAnalytics | null>(null)
   const [loading, setLoading] = useState(true)
   const [token, setToken] = useState("")
+  const [checked, setChecked] = useState(false)
 
   useEffect(() => {
     const savedToken = localStorage.getItem("auth_token")
     if (!savedToken) {
       router.push("/login")
+      setLoading(false)
       return
     }
     setToken(savedToken)
+    setChecked(true)
 
     const fetchDashboardData = async () => {
       setLoading(true)
@@ -93,15 +98,19 @@ export default function StudentDashboard() {
       }
     }
 
+    if (authLoading) {
+      return
+    }
+    if (!user || user.role !== "student") {
+      router.push("/login")
+      setLoading(false)
+      return
+    }
     fetchDashboardData()
-  }, [router])
+  }, [router, authLoading, user])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-background to-secondary/10">
-        <Spinner />
-      </div>
-    )
+  if (!checked || loading || authLoading) {
+    return null
   }
 
   if (profile?.lockedDashboard) {

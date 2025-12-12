@@ -44,6 +44,7 @@ export default function StudentExamsPage() {
 
   const [generatedQuestions, setGeneratedQuestions] = useState<Question[] | null>(null)
   const [pageLoading, setPageLoading] = useState(true)
+  const [unauthorized, setUnauthorized] = useState(true)
   const [topics, setTopics] = useState<Topic[]>([])
   const initializedRef = useRef(false)
   const [selectedLevel, setSelectedLevel] = useState<string>("B7")
@@ -57,15 +58,29 @@ export default function StudentExamsPage() {
   const canvasRefs = useRef<Record<string, HTMLCanvasElement | null>>({})
   const [lockedExams, setLockedExams] = useState(false)
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0)
+  useEffect(() => {
+    const token = localStorage.getItem("auth_token")
+    if (!token) {
+      setUnauthorized(true)
+      router.push("/login")
+      return
+    }
+    setUnauthorized(false)
+  }, [router])
 
   useEffect(() => {
     if (initializedRef.current) return
     if (!authLoading) {
-      const level = user && (user as unknown as User).classLevel ? (user as unknown as User).classLevel : "B7"
+      if (!user || (user as any)?.role !== "student") {
+        setUnauthorized(true)
+        router.push("/login")
+        return
+      }
+      const level = (user as unknown as User).classLevel ? (user as unknown as User).classLevel : "B7"
       setSelectedLevel(level)
       initializedRef.current = true
     }
-  }, [user, authLoading])
+  }, [user, authLoading, router])
 
   useEffect(() => {
     async function loadTopicsAndGenerate() {
@@ -264,12 +279,12 @@ export default function StudentExamsPage() {
       : "bg-gradient-to-br from-red-100 to-red-50 text-red-700 border-2 border-red-300"
   }
 
-  if (authLoading || pageLoading) {
+  if (unauthorized || authLoading || pageLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary/5 via-background to-secondary/5">
         <div className="flex flex-col items-center gap-3">
           <Spinner />
-          <p className="text-muted-foreground">Loading your exam...</p>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     )
