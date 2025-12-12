@@ -31,8 +31,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No questions provided" }, { status: 400 });
     }
 
-    if (!topicIds || !Array.isArray(topicIds) || topicIds.length === 0) {
-      return NextResponse.json({ error: "At least one topicId is required" }, { status: 400 });
+    let topicIdList: string[] = Array.isArray(topicIds) ? topicIds.filter(Boolean) : [];
+    if (topicIdList.length === 0) {
+      try {
+        const newTopicRef = await firestore.collection("topics").add({
+          title: "General",
+          classLevel,
+          createdAt: new Date().toISOString(),
+          weekNumber: null,
+        });
+        topicIdList = [newTopicRef.id];
+      } catch (e) {
+        return NextResponse.json({ error: "No topics found and failed to create default topic" }, { status: 400 });
+      }
     }
 
     if (!classLevel || !["B7", "B8"].includes(classLevel)) {
@@ -65,10 +76,21 @@ export async function POST(req: NextRequest) {
 
       const rawAnswer = (q as any).correctAnswer ?? (q as any).explanation ?? (q as any).answer ?? null;
       const correctAnswer = Array.isArray(rawAnswer) || typeof rawAnswer === 'string' ? rawAnswer : null;
-      const marks: number = typeof q.marks === 'number' ? q.marks : (normalizedType === 'essay' ? 4 : 1);
+      let marks: number;
+      if (typeof (q as any).marks === 'number') {
+        marks = (q as any).marks as number;
+      } else if (typeof (q as any).marks === 'string') {
+        const m = parseFloat((q as any).marks);
+        marks = Number.isFinite(m) ? m : (normalizedType === 'essay' ? 4 : 1);
+      } else if ((q as any).rubric && Array.isArray((q as any).rubric.keyPoints) && normalizedType === 'essay') {
+        const total = ((q as any).rubric.keyPoints as Array<any>).reduce((acc, kp) => acc + Number(kp.weight || 1), 0);
+        marks = total > 0 ? total : 4;
+      } else {
+        marks = normalizedType === 'essay' ? 4 : 1;
+      }
 
       const baseDoc: any = {
-        topicId: topicIds[0], // assign first topic
+        topicId: topicIdList[0], // assign first topic
         questionText,
         questionType: normalizedType,
         marks,

@@ -6,7 +6,7 @@ import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle } from "@/components/ui/sheet"
-import { MenuIcon, BarChart3, BookOpen, PlusSquare, TrendingUp, LogOut, Users, FileText } from "lucide-react" // Added FileText icon
+import { MenuIcon, BarChart3, BookOpen, PlusSquare, TrendingUp, LogOut, Users, FileText, Award } from "lucide-react"
 
 export function AdminNav() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -26,6 +26,7 @@ export function AdminNav() {
     { href: "/admin/questions", label: "Question Bank", icon: BookOpen },
     { href: "/admin/exams/create", label: "Create Exam", icon: PlusSquare },
     { href: "/admin/exams/manage", label: "Manage Exams", icon: FileText }, // Added Manage Exams link
+    { href: "/admin/scores", label: "Scores", icon: Award },
     { href: "/admin/analytics", label: "Analytics", icon: TrendingUp },
   ]
 
