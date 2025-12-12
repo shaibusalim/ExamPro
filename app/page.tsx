@@ -11,6 +11,8 @@ import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from "@/
 import { Carousel } from "@/components/ui/carousel"
 import { CarouselContent } from "@/components/ui/carousel"
 import { CarouselItem } from "@/components/ui/carousel"
+import { MenuIcon } from "lucide-react"
+import { Sheet, SheetContent, SheetTrigger, SheetHeader, SheetTitle } from "@/components/ui/sheet"
 
 export default function LandingPage() {
   const [isScrolled, setIsScrolled] = useState(false)
@@ -19,6 +21,7 @@ export default function LandingPage() {
   const [exams, setExams] = useState(0)
   const [uptime, setUptime] = useState(0)
   const [testimonialApi, setTestimonialApi] = useState<any>(null)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -63,7 +66,7 @@ export default function LandingPage() {
             </div>
             <span className="text-2xl font-bold gradient-text">ExamPro</span>
           </div>
-          <div className="space-x-3 flex items-center">
+          <div className="hidden md:flex space-x-3 items-center">
             <Link href="#features">
               <Button variant="ghost" className="hover:bg-secondary/20">
                 Features
@@ -89,6 +92,37 @@ export default function LandingPage() {
                 Get Started
               </Button>
             </Link>
+          </div>
+          <div className="md:hidden flex items-center">
+            <Sheet open={isMobileOpen} onOpenChange={setIsMobileOpen}>
+              <SheetTrigger asChild>
+                <Button variant="ghost" size="sm" className="hover:bg-secondary/20">
+                  <MenuIcon className="h-5 w-5" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent side="right" className="bg-background/95 backdrop-blur-sm border-border">
+                <SheetHeader>
+                  <SheetTitle className="sr-only">Navigation</SheetTitle>
+                </SheetHeader>
+                <div className="flex flex-col gap-3 mt-8">
+                  <Link href="#features" onClick={() => setIsMobileOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">Features</Button>
+                  </Link>
+                  <Link href="#testimonials" onClick={() => setIsMobileOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">Testimonials</Button>
+                  </Link>
+                  <Link href="#faq" onClick={() => setIsMobileOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">FAQ</Button>
+                  </Link>
+                  <Link href="/login" onClick={() => setIsMobileOpen(false)}>
+                    <Button variant="ghost" className="w-full justify-start">Login</Button>
+                  </Link>
+                  <Link href="/register" onClick={() => setIsMobileOpen(false)}>
+                    <Button className="w-full bg-gradient-to-r from-primary to-secondary text-white border-0">Get Started</Button>
+                  </Link>
+                </div>
+              </SheetContent>
+            </Sheet>
           </div>
         </div>
       </nav>
@@ -321,14 +355,12 @@ export default function LandingPage() {
               </p>
             </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/register?role=teacher">
-                <Button
-                  size="lg"
-                  className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white border-0 px-8"
-                >
-                  Start Teaching
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white border-0 px-8"
+              >
+                Start Teaching
+              </Button>
               <Link href="/register?role=student">
                 <Button size="lg" variant="outline" className="px-8 bg-transparent">
                   Start Learning
