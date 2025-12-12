@@ -25,6 +25,29 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Email and password required" }, { status: 400 });
     }
 
+    const ipSource =
+      request.headers.get("x-forwarded-for") ||
+      request.headers.get("x-real-ip") ||
+      "unknown";
+    const ip = Array.isArray(ipSource) ? ipSource[0] : String(ipSource).split(",")[0].trim();
+    const now = Date.now();
+    const WINDOW_MS = 5 * 60 * 1000;
+    const MAX_ATTEMPTS = 5;
+    const store = ((globalThis as any).__loginRateLimit ||= new Map<string, { count: number; resetAt: number }>());
+    const rec = store.get(ip) || { count: 0, resetAt: now + WINDOW_MS };
+    if (now > rec.resetAt) {
+      rec.count = 0;
+      rec.resetAt = now + WINDOW_MS;
+    }
+    if (rec.count >= MAX_ATTEMPTS) {
+      const retrySec = Math.max(1, Math.ceil((rec.resetAt - now) / 1000));
+      const resp = NextResponse.json({ error: "Too many login attempts. Try again later." }, { status: 429 });
+      resp.headers.set("Retry-After", String(retrySec));
+      return resp;
+    }
+    rec.count += 1;
+    store.set(ip, rec);
+
     // Optional admin bypass only when explicitly enabled
     const allowBypass = String(process.env.ALLOW_ADMIN_BYPASS || "false").toLowerCase() === "true";
     if (allowBypass) {
@@ -117,6 +140,12 @@ export async function POST(request: NextRequest) {
       description: `User logged in from ${clientIp}`,
       createdAt: new Date().toISOString(),
     });
+
+    const store2 = ((globalThis as any).__loginRateLimit ||= new Map<string, { count: number; resetAt: number }>());
+    const ip2 = Array.isArray(ipSource) ? ipSource[0] : String(ipSource).split(",")[0].trim();
+    if (store2.has(ip2)) {
+      store2.delete(ip2);
+    }
 
     const response = NextResponse.json(
       {
