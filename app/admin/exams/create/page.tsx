@@ -44,6 +44,11 @@ export default function CreateExamPage() {
     durationMinutes: 60,
     totalMarks: 100,
     passingMarks: 50,
+    shuffleQuestions: true,
+    shuffleOptions: true,
+    poolSize: 40,
+    versionCount: 1,
+    questionLocking: false,
   })
 
   const [selectedQuestions, setSelectedQuestions] = useState<string[]>([])
@@ -116,7 +121,17 @@ export default function CreateExamPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          ...formData,
+          classId: formData.classId,
+          title: formData.title,
+          description: formData.description,
+          durationMinutes: formData.durationMinutes,
+          totalMarks: formData.totalMarks,
+          passingMarks: formData.passingMarks,
+          shuffleQuestions: formData.shuffleQuestions,
+          shuffleOptions: formData.shuffleOptions,
+          poolSize: formData.poolSize,
+          versionCount: formData.versionCount,
+          questionLocking: formData.questionLocking,
           questions: selectedQuestions.map((qId) => {
             const q = questions.find((qItem) => qItem.id === qId)
             return { id: q?.id, marks: q?.marks || 1 }
@@ -277,6 +292,51 @@ export default function CreateExamPage() {
               </>
             )}
             <div className="mt-4">{selectedQuestions.length} question(s) selected</div>
+          </Card>
+
+          <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Randomization & Security</h2>
+            <div className="grid md:grid-cols-2 gap-4">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={formData.shuffleQuestions}
+                  onCheckedChange={(checked) => setFormData({ ...formData, shuffleQuestions: !!checked })}
+                />
+                <span className="text-sm">Shuffle Questions</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  checked={formData.shuffleOptions}
+                  onCheckedChange={(checked) => setFormData({ ...formData, shuffleOptions: !!checked })}
+                />
+                <span className="text-sm">Shuffle Options</span>
+              </div>
+              <div>
+                <Label>Question Pool Size</Label>
+                <Input
+                  type="number"
+                  value={formData.poolSize}
+                  onChange={(e) => setFormData({ ...formData, poolSize: Math.max(1, Number(e.target.value)) })}
+                />
+                <p className="text-xs text-muted-foreground">Maximum number of questions delivered per student</p>
+              </div>
+              <div>
+                <Label>Version Count</Label>
+                <Input
+                  type="number"
+                  value={formData.versionCount}
+                  onChange={(e) => setFormData({ ...formData, versionCount: Math.max(1, Number(e.target.value)) })}
+                />
+                <p className="text-xs text-muted-foreground">Number of paper versions to distribute</p>
+              </div>
+              <div className="flex items-center gap-2 md:col-span-2">
+                <Checkbox
+                  checked={formData.questionLocking}
+                  onCheckedChange={(checked) => setFormData({ ...formData, questionLocking: !!checked })}
+                />
+                <span className="text-sm">Lock questions (no back navigation)</span>
+              </div>
+            </div>
           </Card>
 
           <Button type="submit" className="w-full">

@@ -40,6 +40,7 @@ export default function ExamPage() {
   const attemptIdRef = useRef("")
   const timerRef = useRef<NodeJS.Timeout | undefined>(undefined)
   const [error, setError] = useState("")
+  const [questionLocking, setQuestionLocking] = useState(false)
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
@@ -69,6 +70,7 @@ export default function ExamPage() {
         setQuestions(Array.isArray(data.questions) ? data.questions : [])
         const mins = typeof data.duration_minutes === 'number' ? data.duration_minutes : 60
         setTimeLeft(mins * 60)
+        setQuestionLocking(!!data.questionLocking)
         setLoading(false)
       })
       .catch((err) => {
@@ -97,17 +99,66 @@ export default function ExamPage() {
     return () => clearInterval(saveInterval)
   }, [responses])
 
-  // Tab switching warning
+  // Proctoring: focus/tab switch and clipboard prevention
   useEffect(() => {
+    const token = localStorage.getItem("auth_token")
+    const examEvent = async (type: string, details: any = {}) => {
+      try {
+        await fetch(`/api/student/exam/${examId}/events`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ attemptId: attemptIdRef.current, type, details }),
+        })
+      } catch {}
+    }
+
     const handleVisibilityChange = () => {
       if (document.hidden) {
-        console.warn("Tab switch detected")
-        // Log this event in the backend
+        examEvent("tab_hidden")
+      } else {
+        examEvent("tab_visible")
+      }
+    }
+    const handleBlur = () => examEvent("window_blur")
+    const handleFocus = () => examEvent("window_focus")
+    const blockContext = (e: MouseEvent) => {
+      e.preventDefault()
+      examEvent("contextmenu_blocked")
+    }
+    const blockClipboard = (e: ClipboardEvent) => {
+      e.preventDefault()
+      const type = e.type === 'copy' ? 'copy_blocked' : e.type === 'paste' ? 'paste_blocked' : 'cut_blocked'
+      examEvent(type)
+    }
+    const blockShortcuts = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        const k = e.key.toLowerCase()
+        if (["c", "v", "x", "p", "a"].includes(k)) {
+          e.preventDefault()
+          examEvent(`shortcut_${k}_blocked`)
+        }
       }
     }
 
     document.addEventListener("visibilitychange", handleVisibilityChange)
-    return () => document.removeEventListener("visibilitychange", handleVisibilityChange)
+    window.addEventListener("blur", handleBlur)
+    window.addEventListener("focus", handleFocus)
+    document.addEventListener("contextmenu", blockContext)
+    document.addEventListener("copy", blockClipboard)
+    document.addEventListener("paste", blockClipboard)
+    document.addEventListener("cut", blockClipboard)
+    document.addEventListener("keydown", blockShortcuts)
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange)
+      window.removeEventListener("blur", handleBlur)
+      window.removeEventListener("focus", handleFocus)
+      document.removeEventListener("contextmenu", blockContext)
+      document.removeEventListener("copy", blockClipboard)
+      document.removeEventListener("paste", blockClipboard)
+      document.removeEventListener("cut", blockClipboard)
+      document.removeEventListener("keydown", blockShortcuts)
+    }
   }, [])
 
   if (loading) {
@@ -294,7 +345,7 @@ export default function ExamPage() {
               <Button
                 variant="outline"
                 onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
-                disabled={currentQuestion === 0}
+                disabled={currentQuestion === 0 || questionLocking}
               >
                 Previous
               </Button>
@@ -318,7 +369,10 @@ export default function ExamPage() {
               {questions.map((_, idx) => (
                 <button
                   key={idx}
-                  onClick={() => setCurrentQuestion(idx)}
+                  onClick={() => {
+                    if (questionLocking && idx < currentQuestion) return
+                    setCurrentQuestion(idx)
+                  }}
                   className={`aspect-square rounded text-sm font-semibold transition-colors ${
                     idx === currentQuestion
                       ? "bg-primary text-primary-foreground"

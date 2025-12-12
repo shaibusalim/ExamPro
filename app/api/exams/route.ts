@@ -73,7 +73,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const { classId, title, description, durationMinutes, totalMarks, passingMarks, questions } = await request.json();
+    const {
+      classId,
+      title,
+      description,
+      durationMinutes,
+      totalMarks,
+      passingMarks,
+      shuffleQuestions,
+      shuffleOptions,
+      poolSize,
+      versionCount,
+      questionLocking,
+      questions,
+    } = await request.json();
 
     // Create exam
     const newExam = {
@@ -86,6 +99,11 @@ export async function POST(request: NextRequest) {
       createdBy: decoded.userId,
       status: "draft", // default status
       createdAt: new Date().toISOString(),
+      shuffleQuestions: typeof shuffleQuestions === "boolean" ? shuffleQuestions : true,
+      shuffleOptions: typeof shuffleOptions === "boolean" ? shuffleOptions : true,
+      poolSize: typeof poolSize === "number" ? Math.max(1, poolSize) : 40,
+      versionCount: typeof versionCount === "number" ? Math.max(1, versionCount) : 1,
+      questionLocking: !!questionLocking,
     };
 
     const examDocRef = await firestore.collection("exams").add(newExam);

@@ -122,13 +122,21 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
     const allQuestionIds = examQuestionsSnapshot.docs
       .map((d) => ((d.data() as any).questionId as string) || d.id)
       .filter(Boolean) as string[];
-    const maxCount = 40;
+    const poolSize = typeof examData.poolSize === "number" ? Math.max(1, examData.poolSize) : 40;
+    const shuffleQuestions = typeof examData.shuffleQuestions === "boolean" ? examData.shuffleQuestions : true;
+    const versionCount = typeof examData.versionCount === "number" ? Math.max(1, examData.versionCount) : 1;
+    const versionIndex = versionCount > 1 ? (strSeed(String(studentId || ""), String(examId || "")) % versionCount) : 0;
     if (!selectedQuestionIds || selectedQuestionIds.length === 0) {
-      const seed = strSeed(String(attemptId || ""), String(examId || ""), String(studentId || ""));
-      const shuffled = seededShuffle(allQuestionIds, seed);
-      selectedQuestionIds = shuffled.slice(0, Math.min(maxCount, shuffled.length));
-      // Persist selection on attempt
-      await firestore.collection("exam_attempts").doc(attemptId).update({ selectedQuestionIds });
+      let orderedIds = allQuestionIds;
+      if (shuffleQuestions) {
+        const seed = strSeed(String(examId || ""), String(versionIndex), String(attemptId || ""));
+        orderedIds = seededShuffle(allQuestionIds, seed);
+      } else if (versionCount > 1) {
+        const seed = strSeed(String(examId || ""), String(versionIndex));
+        orderedIds = seededShuffle(allQuestionIds, seed);
+      }
+      selectedQuestionIds = orderedIds.slice(0, Math.min(poolSize, orderedIds.length));
+      await firestore.collection("exam_attempts").doc(attemptId).update({ selectedQuestionIds, versionIndex });
     }
 
     const questionsWithDetails = await Promise.all(
@@ -154,12 +162,20 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
           const ov = d.data() as any;
           return { id: d.id, text: ov.optionText, isCorrect: !!ov.isCorrect };
         });
-        const optSeed = strSeed(String(attemptId || ""), String(questionId || ""));
-        options = seededShuffle(options, optSeed);
+        const shuffleOptions = typeof examData.shuffleOptions === "boolean" ? examData.shuffleOptions : true;
+        if (shuffleOptions) {
+          const optSeed = strSeed(String(attemptId || ""), String(questionId || ""));
+          options = seededShuffle(options, optSeed);
+        }
       } else if (Array.isArray(fullQuestionData.options) && fullQuestionData.options.length > 0) {
         const texts = fullQuestionData.options.map((text: any) => ({ id: String(text), text }));
-        const optSeed = strSeed(String(attemptId || ""), String(questionId || ""));
-        options = seededShuffle(texts, optSeed);
+        const shuffleOptions = typeof examData.shuffleOptions === "boolean" ? examData.shuffleOptions : true;
+        if (shuffleOptions) {
+          const optSeed = strSeed(String(attemptId || ""), String(questionId || ""));
+          options = seededShuffle(texts, optSeed);
+        } else {
+          options = texts;
+        }
       }
 
         const typeMap: Record<string, string> = {
@@ -193,6 +209,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
       startedAt: startedAt ? (startedAt as any).toDate().toISOString() : new Date().toISOString(),
       duration_minutes: Number(examData.durationMinutes || 60),
       questions,
+      questionLocking: !!examData.questionLocking,
+      versionIndex,
     });
   } catch (error) {
     console.error("[Firebase] Error starting exam:", error);
