@@ -39,16 +39,22 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
     let totalPossibleMarks = 0;
     const studentAnswers: { [questionId: string]: any } = {};
     const topicAggregate: { [topicId: string]: { score: number; total: number } } = {};
-
-    for (const response of responses) {
-      const questionId = response.questionId;
+ 
+    const selectedQuestionIds: string[] = Array.isArray(attemptData.selectedQuestionIds) ? attemptData.selectedQuestionIds : [];
+    const responseMap: Record<string, any> = {};
+    if (Array.isArray(responses)) {
+      for (const r of responses) {
+        if (r && r.questionId) responseMap[String(r.questionId)] = r;
+      }
+    }
+ 
+    for (const questionId of selectedQuestionIds) {
       const questionTopDoc = await firestore.collection("questions").doc(questionId).get();
-
+ 
       let q: any = null;
       if (questionTopDoc.exists) {
         q = questionTopDoc.data();
       } else {
-        // Fallback: fetch from exam subcollection if top-level not present
         const eqSnap = await firestore
           .collection("exams")
           .doc(examId)
@@ -61,18 +67,21 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
           continue;
         }
       }
+ 
+      const questionMarks = Number(q.marks || 1);
+      totalPossibleMarks += questionMarks;
+ 
+      const type = String(q.questionType || q.type || q.question_type || "mcq").toLowerCase();
+      const topicId = String((q as any).topicId || "");
+      const response = responseMap[questionId];
+ 
       let isCorrect = false;
       let marksAwarded = 0;
-      const questionMarks = Number(q.marks || 1);
-
-      totalPossibleMarks += questionMarks;
-
-      const type = String(q.questionType || q.type || q.question_type || "mcq");
-      const typeNorm = type.toLowerCase();
-      const topicId = String((q as any).topicId || "");
-      if (typeNorm === "mcq" || typeNorm === "true_false") {
-        const selectedId = response.selectedOptionId || response.selectedOptionText || response.selectedOption || null;
-        if (selectedId) {
+      let isAnswered = !!response;
+ 
+      if (isAnswered) {
+        if (type === "mcq" || type === "true_false") {
+          const selectedId = response.selectedOptionId || response.selectedOptionText || response.selectedOption || null;
           const optSnap = await firestore.collection("questions").doc(questionId).collection("options").get();
           const correctOpt = optSnap.docs.find((d) => (d.data() as any).isCorrect === true);
           if (correctOpt) {
@@ -88,7 +97,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
                 isCorrect = true;
                 marksAwarded = questionMarks;
                 totalScore += marksAwarded;
-          } else if (typeNorm === "true_false") {
+              } else if (type === "true_false") {
                 const tf = ["true", "false"];
                 if (tf.includes(String(selectedId).toLowerCase())) {
                   const match = optSnap.docs.find((d) => String((d.data() as any).optionText || "").toLowerCase() === String(selectedId).toLowerCase());
@@ -101,28 +110,29 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
               }
             }
           }
-      }
-      } else if (typeNorm === "theory" || typeNorm === "essay") {
-        const stem = String((q as any).questionText || (q as any).question_text || (q as any).question || "");
-        const correctRaw = (q as any).correctAnswer;
-        const correct = Array.isArray(correctRaw)
-          ? String(correctRaw.filter(Boolean).join("; "))
-          : String(correctRaw || (q as any).explanation || "");
-        const textResp = String(response.textResponse || "");
-        const rawScore = await gradeTheoryAnswer(stem, textResp, correct, questionMarks, (q as any).rubric);
-        marksAwarded = rawScore;
-        totalScore += marksAwarded;
-      }
-
+        } else if (type === "theory" || type === "essay") {
+          const stem = String((q as any).questionText || (q as any).question_text || (q as any).question || "");
+          const correctRaw = (q as any).correctAnswer;
+          const correct = Array.isArray(correctRaw)
+            ? String(correctRaw.filter(Boolean).join("; "))
+            : String(correctRaw || (q as any).explanation || "");
+          const textResp = String(response.textResponse || "");
+          const rawScore = await gradeTheoryAnswer(stem, textResp, correct, questionMarks, (q as any).rubric);
+          marksAwarded = rawScore;
+          totalScore += marksAwarded;
+          isCorrect = marksAwarded >= Math.max(1, Math.round(questionMarks * 0.5)); // heuristic correctness for theory
+        }
+      } // else no response: marksAwarded stays 0, isCorrect false
+ 
       studentAnswers[questionId] = {
         questionId,
-        selectedOptionText: response.selectedOptionText || null, // Or selectedOptionId
-        textResponse: response.textResponse || null,
+        selectedOptionText: response?.selectedOptionText || null,
+        textResponse: response?.textResponse || null,
         isCorrect,
         marksAwarded,
-        isAnswered: true,
+        isAnswered,
       };
-
+ 
       if (topicId) {
         const agg = topicAggregate[topicId] || { score: 0, total: 0 };
         agg.total += questionMarks;
