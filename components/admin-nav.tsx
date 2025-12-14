@@ -24,6 +24,7 @@ export function AdminNav() {
     { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
     { href: "/admin/students", label: "Students", icon: Users },
     { href: "/admin/questions", label: "Question Bank", icon: BookOpen },
+    { href: "/admin/lessons", label: "Lessons", icon: BookOpen },
     { href: "/admin/exams/create", label: "Create Exam", icon: PlusSquare },
     { href: "/admin/exams/manage", label: "Manage Exams", icon: FileText }, // Added Manage Exams link
     { href: "/admin/scores", label: "Scores", icon: Award },
@@ -42,7 +43,7 @@ export function AdminNav() {
           </span>
         </Link>
 
-        <div className="hidden sm:flex gap-1 items-center">
+        <div className="hidden sm:flex flex-wrap gap-1 items-center">
           {navItems.map((item) => {
             const Icon = item.icon
             const active = isActive(item.href)
