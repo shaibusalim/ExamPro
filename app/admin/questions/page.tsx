@@ -17,6 +17,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { BookOpen, Plus, Eye, Image as ImageIcon } from "lucide-react"
 // removed direct firebase storage imports; will lazy-import at runtime
 import { type Question } from "@/lib/types"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog"
 
 interface Topic {
   id: string
@@ -38,6 +39,10 @@ export default function QuestionsPage() {
   const [isUploadingImage, setIsUploadingImage] = useState(false)
   const [classLevel, setClassLevel] = useState<"B7" | "B8">("B7")
   const [activeForm, setActiveForm] = useState<"single" | "bulk" | null>(null) // New state for active form
+  const [editOpen, setEditOpen] = useState(false)
+  const [editQuestion, setEditQuestion] = useState<Question | null>(null)
+  const [editText, setEditText] = useState("")
+  const [editMarks, setEditMarks] = useState<number>(1)
 
   const [formData, setFormData] = useState({
     topicId: "",
@@ -129,6 +134,45 @@ export default function QuestionsPage() {
 
     fetchQuestionsAndTopics()
   }, [router, token, classLevel])
+
+  function openEdit(q: Question) {
+    setEditQuestion(q)
+    setEditText(String((q as any).questionText || (q as any).question || ""))
+    setEditMarks(typeof (q as any).marks === "number" ? (q as any).marks : 1)
+    setEditOpen(true)
+  }
+
+  async function saveEdit() {
+    if (!editQuestion) return
+    setError("")
+    setSuccess("")
+    try {
+      const res = await fetch(`/api/admin/questions/${editQuestion.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          questionText: editText,
+          marks: editMarks,
+        }),
+      })
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({} as any))
+        setError(body?.error || "Failed to update question")
+        return
+      }
+      const updated = await res.json()
+      setQuestions((prev) =>
+        prev.map((q) => (q.id === editQuestion.id ? { ...q, questionText: updated.questionText, marks: updated.marks } as any : q)),
+      )
+      setEditOpen(false)
+      setSuccess("Question updated")
+    } catch (e) {
+      setError("Failed to update question")
+    }
+  }
 
   async function handleCreateQuestion(e: React.FormEvent) {
     e.preventDefault()
@@ -661,6 +705,9 @@ export default function QuestionsPage() {
                         </div>
                       )}
                       <div className="flex gap-3 pt-4">
+                        <Button variant="outline" onClick={() => openEdit(question)}>
+                          Edit
+                        </Button>
                         <Button onClick={() => deleteQuestion(question.id)} className="bg-red-600 hover:bg-red-700 text-white">
                           Delete
                         </Button>
@@ -672,6 +719,36 @@ export default function QuestionsPage() {
             )}
           </TabsContent>
         </Tabs>
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="sm:max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Edit Question</DialogTitle>
+              <DialogDescription>Update the question text and marks</DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="edit-text">Question</Label>
+                <Textarea id="edit-text" value={editText} onChange={(e) => setEditText(e.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="edit-marks">Marks</Label>
+                <Input
+                  id="edit-marks"
+                  type="number"
+                  min={0}
+                  value={editMarks}
+                  onChange={(e) => setEditMarks(Number(e.target.value))}
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={saveEdit}>Save</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </main>
     </div>
   )

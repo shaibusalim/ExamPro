@@ -204,12 +204,12 @@ export default function ResultsPage() {
           <p className="text-muted-foreground">Your performance summary</p>
         </div>
 
-        <Card className="p-12 mb-8 text-center space-y-6">
+        <Card className="p-6 md:p-12 mb-8 text-center space-y-6">
           <div>
-            <div className={`text-6xl font-bold ${isPassed ? "text-green-600" : "text-red-600"}`}>
+            <div className={`text-4xl md:text-6xl font-bold ${isPassed ? "text-green-600" : "text-red-600"}`}>
               {result.percentage}%
             </div>
-            <p className="text-2xl font-semibold mt-2">{isPassed ? "Passed!" : "Did Not Pass"}</p>
+            <p className="text-xl md:text-2xl font-semibold mt-2">{isPassed ? "Passed!" : "Did Not Pass"}</p>
           </div>
 
           <div className="space-y-4">
@@ -263,20 +263,20 @@ export default function ResultsPage() {
           </div>
         )}
 
-        <div className="flex gap-4 justify-center">
-          <Button variant="outline" className="gap-2 bg-transparent" onClick={exportCSV}>
+        <div className="flex flex-col sm:flex-row sm:flex-wrap gap-3 justify-center">
+          <Button variant="outline" className="w-full sm:w-auto gap-2 bg-transparent" onClick={exportCSV}>
             <Download className="w-4 h-4" />
             Export CSV
           </Button>
-          <Button variant="outline" className="gap-2 bg-transparent" onClick={() => window.print()}>
+          <Button variant="outline" className="w-full sm:w-auto gap-2 bg-transparent" onClick={() => window.print()}>
             <Download className="w-4 h-4" />
             Save as PDF
           </Button>
-          <Button className="gap-2" onClick={openCertificate}>
+          <Button className="w-full sm:w-auto gap-2" onClick={openCertificate}>
             Generate Certificate
           </Button>
-          <Link href="/student/dashboard">
-            <Button>Back to Dashboard</Button>
+          <Link href="/student/dashboard" className="w-full sm:w-auto">
+            <Button className="w-full sm:w-auto">Back to Dashboard</Button>
           </Link>
         </div>
       </main>
