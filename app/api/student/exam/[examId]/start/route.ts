@@ -122,20 +122,83 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
     const allQuestionIds = examQuestionsSnapshot.docs
       .map((d) => ((d.data() as any).questionId as string) || d.id)
       .filter(Boolean) as string[];
-    const poolSize = typeof examData.poolSize === "number" ? Math.max(1, examData.poolSize) : 40;
     const shuffleQuestions = typeof examData.shuffleQuestions === "boolean" ? examData.shuffleQuestions : true;
     const versionCount = typeof examData.versionCount === "number" ? Math.max(1, examData.versionCount) : 1;
     const versionIndex = versionCount > 1 ? (strSeed(String(studentId || ""), String(examId || "")) % versionCount) : 0;
     if (!selectedQuestionIds || selectedQuestionIds.length === 0) {
-      let orderedIds = allQuestionIds;
-      if (shuffleQuestions) {
-        const seed = strSeed(String(examId || ""), String(versionIndex), String(attemptId || ""));
-        orderedIds = seededShuffle(allQuestionIds, seed);
-      } else if (versionCount > 1) {
-        const seed = strSeed(String(examId || ""), String(versionIndex));
-        orderedIds = seededShuffle(allQuestionIds, seed);
+      const typeMap: Record<string, string> = { mcq: "mcq", MCQ: "mcq", "true_false": "true_false", "True/False": "true_false", essay: "essay", theory: "essay" };
+      const metaList = await Promise.all(
+        examQuestionsSnapshot.docs.map(async (doc) => {
+          const eq = doc.data() as any;
+          const qid = (eq.questionId as string) || doc.id;
+          let marks = Number(eq.marks || 0);
+          let tRaw = String(eq.questionType || eq.type || eq.question_type || "");
+          if (!tRaw || !marks) {
+            const qTop = await firestore.collection("questions").doc(qid).get();
+            if (qTop.exists) {
+              const qd = qTop.data() as any;
+              tRaw = tRaw || String(qd.questionType || qd.type || qd.question_type || "");
+              marks = marks || Number(qd.marks || 0);
+            }
+          }
+          const t = typeMap[tRaw] || "mcq";
+          return { id: qid, marks: marks || 1, type: t };
+        })
+      );
+      const objectives = metaList.filter((m) => m.type === "mcq" || m.type === "true_false");
+      const theories = metaList.filter((m) => m.type === "essay");
+      const objSeed = strSeed(String(examId || ""), String(versionIndex), String(attemptId || ""), "obj");
+      const shuffledObj = seededShuffle(objectives, objSeed);
+      const selectedObj = shuffledObj.slice(0, Math.min(35, shuffledObj.length)).map((m) => m.id);
+      const theoSeed = strSeed(String(examId || ""), String(versionIndex), String(attemptId || ""), "theory");
+      const shuffledTheo = seededShuffle(theories, theoSeed);
+      function selectTheoryForTarget(cands: { id: string; marks: number }[], target: number): string[] {
+        const n = cands.length;
+        const dp: boolean[] = Array(target + 1).fill(false);
+        const prev: Array<{ sum: number; idx: number } | null> = Array(target + 1).fill(null);
+        dp[0] = true;
+        for (let i = 0; i < n; i++) {
+          const m = Math.min(target, Math.max(0, Number(cands[i].marks || 0)));
+          for (let s = target; s >= m; s--) {
+            if (!dp[s] && dp[s - m]) {
+              dp[s] = true;
+              prev[s] = { sum: s - m, idx: i };
+            }
+          }
+        }
+        let best = target;
+        if (!dp[target]) {
+          for (let s = target; s >= 0; s--) {
+            if (dp[s]) {
+              best = s;
+              break;
+            }
+          }
+        }
+        const picks: number[] = [];
+        let cur = best;
+        while (cur > 0) {
+          const p = prev[cur];
+          if (!p) break;
+          picks.push(p.idx);
+          cur = p.sum;
+        }
+        if (picks.length === 0 && cands.length > 0) {
+          const minIdx = cands.reduce((mi, _, i) => (cands[i].marks < cands[mi].marks ? i : mi), 0);
+          return [cands[minIdx].id];
+        }
+        return picks.map((i) => cands[i].id);
       }
-      selectedQuestionIds = orderedIds.slice(0, Math.min(poolSize, orderedIds.length));
+      const selectedTheo = selectTheoryForTarget(shuffledTheo.map((t) => ({ id: t.id, marks: t.marks })), 30);
+      let combined = [...selectedObj, ...selectedTheo];
+      if (shuffleQuestions) {
+        const seed = strSeed(String(examId || ""), String(versionIndex), String(attemptId || ""), "final");
+        combined = seededShuffle(combined, seed);
+      } else if (versionCount > 1) {
+        const seed = strSeed(String(examId || ""), String(versionIndex), "final");
+        combined = seededShuffle(combined, seed);
+      }
+      selectedQuestionIds = combined;
       await firestore.collection("exam_attempts").doc(attemptId).update({ selectedQuestionIds, versionIndex });
     }
 
