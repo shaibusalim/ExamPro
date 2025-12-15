@@ -22,10 +22,8 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
     const { examId } = await context.params;
     const studentId = decoded.userId;
 
-    // 1. Get exam attempt
     const attemptRef = firestore.collection("exam_attempts").doc(attemptId);
     const attemptDoc = await attemptRef.get();
-
     if (!attemptDoc.exists || attemptDoc.data()?.studentId !== studentId || attemptDoc.data()?.examId !== examId) {
       return NextResponse.json({ error: "Attempt not found or unauthorized" }, { status: 404 });
     }
@@ -68,7 +66,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
       if (questionTopDoc.exists) {
         q = questionTopDoc.data();
       } else {
-        // Fallback: fetch from exam subcollection if top-level not present
         const eqSnap = await firestore
           .collection("exams")
           .doc(examId)
@@ -77,10 +74,10 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
           .get();
         if (eqSnap.exists) q = eqSnap.data();
         if (!q) {
-          console.warn(`Question ${questionId} not found during grading.`);
           continue;
         }
       }
+
       let isCorrect = false;
       let marksAwarded = 0;
       const typeForFallback = String(q.questionType || q.type || q.question_type || "mcq").toLowerCase();
@@ -90,6 +87,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
       const type = String(q.questionType || q.type || q.question_type || "mcq");
       const typeNorm = type.toLowerCase();
       const topicId = String((q as any).topicId || "");
+
       if (typeNorm === "mcq" || typeNorm === "true_false") {
         const selectedId = response.selectedOptionId || response.selectedOptionText || response.selectedOption || null;
         if (selectedId) {
@@ -108,7 +106,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
                 isCorrect = true;
                 marksAwarded = questionMarks;
                 totalScore += marksAwarded;
-          } else if (typeNorm === "true_false") {
+              } else if (typeNorm === "true_false") {
                 const tf = ["true", "false"];
                 if (tf.includes(String(selectedId).toLowerCase())) {
                   const match = optSnap.docs.find((d) => String((d.data() as any).optionText || "").toLowerCase() === String(selectedId).toLowerCase());
@@ -121,7 +119,7 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
               }
             }
           }
-      }
+        }
       } else if (typeNorm === "theory" || typeNorm === "essay") {
         const stem = String((q as any).questionText || (q as any).question_text || (q as any).question || "");
         const correctRaw = (q as any).correctAnswer;
@@ -129,14 +127,22 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
           ? String(correctRaw.filter(Boolean).join("; "))
           : String(correctRaw || (q as any).explanation || "");
         const textResp = String(response.textResponse || "");
-        const rawScore = await gradeTheoryAnswer(stem, textResp, correct, questionMarks, (q as any).rubric);
+        let rubricForGrade = (q as any).rubric;
+        if ((!rubricForGrade || !Array.isArray(rubricForGrade?.keyPoints) || rubricForGrade.keyPoints.length === 0) && Array.isArray(correctRaw)) {
+          rubricForGrade = {
+            keyPoints: (correctRaw as string[])
+              .filter(Boolean)
+              .map((p: string) => ({ point: String(p), weight: 1 })),
+          };
+        }
+        const rawScore = await gradeTheoryAnswer(stem, textResp, correct, questionMarks, rubricForGrade);
         marksAwarded = rawScore;
         totalScore += marksAwarded;
       }
 
       studentAnswers[questionId] = {
         questionId,
-        selectedOptionText: response.selectedOptionText || null, // Or selectedOptionId
+        selectedOptionText: response.selectedOptionText || null,
         textResponse: response.textResponse || null,
         isCorrect,
         marksAwarded,
@@ -170,7 +176,6 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
       message: "Exam submitted successfully",
     });
   } catch (error) {
-    console.error("[Firebase] Error submitting exam:", error);
     return NextResponse.json({ error: "Failed to submit exam" }, { status: 500 });
   }
 }

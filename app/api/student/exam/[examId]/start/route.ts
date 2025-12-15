@@ -126,13 +126,22 @@ export async function POST(request: NextRequest, context: { params: Promise<{ ex
     const versionCount = typeof examData.versionCount === "number" ? Math.max(1, examData.versionCount) : 1;
     const versionIndex = versionCount > 1 ? (strSeed(String(studentId || ""), String(examId || "")) % versionCount) : 0;
     if (!selectedQuestionIds || selectedQuestionIds.length === 0) {
-      const typed = examQuestionsSnapshot.docs.map(d => {
-        const eq = d.data() as any;
-        const qid = ((eq.questionId as string) || d.id);
-        const tRaw = String(eq.questionType || eq.type || "").toLowerCase();
-        const tNorm = tRaw === "mcq" || tRaw === "true_false" ? "objective" : (tRaw === "essay" || tRaw === "theory" ? "theory" : "objective");
-        return { id: qid, type: tNorm };
-      }).filter(q => !!q.id);
+    const typed: Array<{ id: string; type: "objective" | "theory" }> = [];
+    for (const d of examQuestionsSnapshot.docs) {
+      const eq = d.data() as any;
+      const qid = ((eq.questionId as string) || d.id);
+      if (!qid) continue;
+      let tRaw = String(eq.questionType || eq.type || "").toLowerCase();
+      if (!tRaw) {
+        const qTop = await firestore.collection("questions").doc(qid).get();
+        if (qTop.exists) {
+          const qd = qTop.data() as any;
+          tRaw = String(qd.questionType || qd.type || qd.question_type || "").toLowerCase();
+        }
+      }
+      const tNorm = (tRaw === "mcq" || tRaw === "true_false") ? "objective" : ((tRaw === "essay" || tRaw === "theory") ? "theory" : "objective");
+      typed.push({ id: qid, type: tNorm });
+    }
       let objIds = typed.filter(t => t.type === "objective").map(t => t.id);
       let thyIds = typed.filter(t => t.type === "theory").map(t => t.id);
       if (shuffleQuestions) {
