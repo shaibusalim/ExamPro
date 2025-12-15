@@ -1,5 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { firestore } from "@/lib/firebaseAdmin";
+import fs from "fs";
+import path from "path";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ topicId: string }> }) {
   try {
@@ -43,6 +45,33 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json(finalQuestions);
   } catch (error) {
     console.error("[Firebase] Error fetching topic questions:", error);
-    return NextResponse.json({ error: "Failed to fetch topic questions" }, { status: 500 });
+    try {
+      const limit = parseInt(request.nextUrl.searchParams.get("limit") || "10", 10);
+      const fallbackPath = path.join(process.cwd(), "basic8.json");
+      const raw = fs.readFileSync(fallbackPath, "utf8");
+      const parsed = JSON.parse(raw) as any[];
+      const normalized = parsed.map((q, idx) => {
+        const opts = Array.isArray(q.options)
+          ? q.options.map((o: any) =>
+              typeof o === "string"
+                ? { id: `opt-${idx}-${Math.random().toString(36).slice(2)}`, text: o, order: 0, isCorrect: String(o) === String(q.correctAnswer) }
+                : { id: `opt-${idx}-${Math.random().toString(36).slice(2)}`, text: o.text ?? String(o), order: 0, isCorrect: !!o.isCorrect }
+            )
+          : [];
+        return {
+          id: `fb-${idx + 1}`,
+          questionText: q.questionText || q.question || "",
+          questionType: String(q.questionType || "mcq").toLowerCase(),
+          marks: typeof q.marks === "number" ? q.marks : 1,
+          correctAnswer: q.correctAnswer || null,
+          options: opts,
+          explanation: q.explanation || null,
+        };
+      });
+      const shuffled = normalized.sort(() => Math.random() - 0.5).slice(0, limit);
+      return NextResponse.json(shuffled);
+    } catch {
+      return NextResponse.json({ error: "Failed to fetch topic questions" }, { status: 500 });
+    }
   }
 }

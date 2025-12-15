@@ -35,7 +35,6 @@ export function StudentNav() {
 
   const navLinks = [
     { href: "/student/dashboard", label: "Dashboard", icon: Home },
-    { href: "/student/learn", label: "Learn", icon: BookOpen },
     { href: "/student/practice", label: "Practice", icon: Zap },
     { href: "/student/leaderboard", label: "Leaderboard", icon: Trophy },
     { href: "/student/exams", label: "Exam", icon: FileText },

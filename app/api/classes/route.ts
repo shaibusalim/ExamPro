@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(classes);
   } catch (error) {
     console.error("[Firebase] Error fetching classes:", error);
-    return NextResponse.json({ error: "Failed to fetch classes" }, { status: 500 });
+    return NextResponse.json([]);
   }
 }
 

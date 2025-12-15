@@ -125,6 +125,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(filtered);
   } catch (error) {
     console.error("[Firebase] Error fetching student exams:", error);
-    return NextResponse.json({ error: "Failed to fetch student exams" }, { status: 500 });
+    return NextResponse.json([]);
   }
 }
