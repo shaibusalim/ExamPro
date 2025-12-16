@@ -87,7 +87,7 @@ export default function LandingPage() {
                 Login
               </Button>
             </Link>
-            <Link href="/register">
+            <Link href="/login">
               <Button className="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-white border-0">
                 Get Started
               </Button>
@@ -117,7 +117,7 @@ export default function LandingPage() {
                   <Link href="/login" onClick={() => setIsMobileOpen(false)}>
                     <Button variant="ghost" className="w-full justify-start">Login</Button>
                   </Link>
-                  <Link href="/register" onClick={() => setIsMobileOpen(false)}>
+                  <Link href="/login" onClick={() => setIsMobileOpen(false)}>
                     <Button className="w-full bg-gradient-to-r from-primary to-secondary text-white border-0">Get Started</Button>
                   </Link>
                 </div>

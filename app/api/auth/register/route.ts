@@ -24,6 +24,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Registration restricted to students" }, { status: 403 })
     }
 
+    // Normalize fields for uniqueness checks
+    const emailLower = String(email).trim().toLowerCase();
+    const nameTrim = String(fullName).trim();
+    const nameNorm = nameTrim.toLowerCase().replace(/\s+/g, " ");
+    const codeTrim = String(studentId || "").trim();
+    const codeNorm = codeTrim ? codeTrim.toUpperCase().replace(/\s+/g, "") : "";
+
+    // Uniqueness checks (prevent duplicate name/email/student code)
+    // Email duplicates (defensive pre-check; Firebase Auth also enforces this)
+    const existingByEmail = await adminFirestore
+      .collection("users")
+      .where("email", "==", emailLower)
+      .limit(1)
+      .get();
+    if (!existingByEmail.empty) {
+      return NextResponse.json({ error: "Email already registered." }, { status: 409 });
+    }
+
+    // Name duplicates (check both raw and normalized to catch legacy docs)
+    const [dupNameRaw, dupNameNorm] = await Promise.all([
+      adminFirestore.collection("users").where("fullName", "==", nameTrim).limit(1).get(),
+      adminFirestore.collection("users").where("fullNameNormalized", "==", nameNorm).limit(1).get(),
+    ]);
+    if (!dupNameRaw.empty || !dupNameNorm.empty) {
+      return NextResponse.json({ error: "Full name already registered." }, { status: 409 });
+    }
+
+    // Student code duplicates (optional field; check both raw and normalized)
+    if (codeTrim) {
+      const [dupCodeRaw, dupCodeNorm] = await Promise.all([
+        adminFirestore.collection("users").where("studentId", "==", codeTrim).limit(1).get(),
+        adminFirestore.collection("users").where("studentIdNormalized", "==", codeNorm).limit(1).get(),
+      ]);
+      if (!dupCodeRaw.empty || !dupCodeNorm.empty) {
+        return NextResponse.json({ error: "Student code already registered." }, { status: 409 });
+      }
+    }
+
     // Create user with Firebase Authentication
     const firebaseConfig = {
       apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -50,10 +88,13 @@ export async function POST(request: NextRequest) {
     // Store additional user details in Firestore (using Admin SDK to bypass client rules)
     const userData = {
       email: user.email,
+      emailLower,
       fullName,
+      fullNameNormalized: nameNorm,
       role: "student",
       classLevel: classLevel || null,
       studentId: studentId || null,
+      studentIdNormalized: codeNorm || null,
       isApproved: false,
       createdAt: new Date().toISOString(),
     };

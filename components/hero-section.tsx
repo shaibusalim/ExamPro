@@ -78,7 +78,7 @@ export function HeroSection() {
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 pt-6 animate-slide-up-delay">
-            <Link href="/register">
+            <Link href="/login">
               <Button
                 size="lg"
                 className="bg-gradient-to-r from-primary to-secondary hover:shadow-lg hover:shadow-primary/50 text-white border-0 px-8 group w-full sm:w-auto transition-all duration-300 hover:scale-105"
@@ -216,7 +216,7 @@ export function HeroSection() {
                 <Link href="/demo-exams">
                   <Button>Try Sample Quiz</Button>
                 </Link>
-                <Link href="/register">
+                <Link href="/login">
                   <Button variant="outline">Get Started</Button>
                 </Link>
               </div>
