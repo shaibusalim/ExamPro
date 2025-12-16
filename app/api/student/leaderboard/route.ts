@@ -37,7 +37,6 @@ export async function GET(request: NextRequest) {
       const attemptsSnap = await firestore
         .collection("exam_attempts")
         .where("studentId", "==", u.id)
-        .where("status", "==", "completed")
         .get()
 
       let totalExams = 0
@@ -46,6 +45,8 @@ export async function GET(request: NextRequest) {
 
       attemptsSnap.forEach((doc) => {
         const a = doc.data() as any
+        const st = String(a.status || "")
+        if (!["published", "completed"].includes(st)) return
         const total = Number(a.totalMarks || 0)
         const score = Number(a.score || 0)
         const pct = total > 0 ? (score / total) * 100 : 0
