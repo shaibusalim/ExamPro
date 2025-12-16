@@ -36,6 +36,38 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   }
 }
 
+export async function GET(request: NextRequest, { params }: { params: Promise<{ questionId: string }> }) {
+  try {
+    const authHeader = request.headers.get("authorization")
+    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    const token = authHeader.replace("Bearer ", "")
+    const decoded = verifyToken(token)
+    if (!decoded || decoded.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+
+    const { questionId } = await params
+    const id = String(questionId)
+    if (!id) return NextResponse.json({ error: "Question ID required" }, { status: 400 })
+
+    const qRef = firestore.collection("questions").doc(id)
+    const qDoc = await qRef.get()
+    if (!qDoc.exists) return NextResponse.json({ error: "Question not found" }, { status: 404 })
+    const data = qDoc.data() as any
+    let options: any[] = []
+    const tRaw = String(data.questionType || data.type || "").toLowerCase()
+    if (["mcq", "true_false"].includes(tRaw)) {
+      const optSnap = await qRef.collection("options").orderBy("optionOrder").get()
+      options = optSnap.docs.map((d) => {
+        const ov = d.data() as any
+        return { id: d.id, text: ov.optionText, isCorrect: !!ov.isCorrect, order: ov.optionOrder }
+      })
+    }
+    return NextResponse.json({ id, ...data, options })
+  } catch (e) {
+    console.error("[API/Admin/Questions/GET] Error:", e)
+    return NextResponse.json({ error: "Failed to fetch question" }, { status: 500 })
+  }
+}
+
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ questionId: string }> }) {
   try {
     const authHeader = request.headers.get("authorization")
@@ -53,6 +85,14 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     if (typeof body.questionText === "string" && body.questionText.trim()) updates.questionText = body.questionText.trim()
     if (typeof body.marks === "number" && body.marks >= 0) updates.marks = body.marks
     if (typeof body.explanation === "string") updates.explanation = body.explanation
+    if (body.rubric && Array.isArray(body.rubric.keyPoints)) {
+      const sanitized = (body.rubric.keyPoints as Array<any>).map((kp) => ({
+        point: String(kp.point || "").trim(),
+        weight: Number(kp.weight || 1),
+        ...(Array.isArray(kp.synonyms) ? { synonyms: kp.synonyms.map((s: any) => String(s || "").trim()).filter(Boolean) } : {}),
+      })).filter((kp) => kp.point.length > 0)
+      updates.rubric = { keyPoints: sanitized }
+    }
 
     if (Object.keys(updates).length === 0) {
       return NextResponse.json({ error: "No valid fields to update" }, { status: 400 })

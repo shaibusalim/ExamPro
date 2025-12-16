@@ -36,6 +36,7 @@ export default function ExamPage() {
   const [loading, setLoading] = useState(true)
   const [timeLeft, setTimeLeft] = useState(0)
   const [showSubmitDialog, setShowSubmitDialog] = useState(false)
+  const [showSubmittedDialog, setShowSubmittedDialog] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const attemptIdRef = useRef("")
   const timerRef = useRef<NodeJS.Timeout | undefined>(undefined)
@@ -200,6 +201,13 @@ export default function ExamPage() {
   const seconds = timeLeft % 60
 
   async function handleSubmit() {
+    const theoryQuestions = questions.filter(q => q.question_type === "essay")
+    const emptyTheory = theoryQuestions.some(q => !responses[q.id]?.textResponse || String(responses[q.id]?.textResponse).trim() === "")
+    if (emptyTheory) {
+      alert("Please complete all theory questions before submitting.")
+      setShowSubmitDialog(false)
+      return
+    }
     setSubmitting(true)
     const token = localStorage.getItem("auth_token")
 
@@ -227,8 +235,8 @@ export default function ExamPage() {
           alert("Failed to submit exam")
         }
       } else {
-        const data = await response.json()
-        router.push(`/student/results/${examId}`)
+        setShowSubmitDialog(false)
+        setShowSubmittedDialog(true)
       }
     } catch (error) {
       console.error(error)
@@ -358,7 +366,20 @@ export default function ExamPage() {
                   Submit Exam
                 </Button>
               ) : (
-                <Button onClick={() => setCurrentQuestion(currentQuestion + 1)}>Next</Button>
+                <Button
+                  onClick={() => {
+                    const curr = questions[currentQuestion]
+                    const isEssay = curr.question_type === "essay"
+                    const text = String(responses[curr.id]?.textResponse || "").trim()
+                    if (isEssay && text === "") {
+                      alert("Please complete the current theory question before proceeding.")
+                      return
+                    }
+                    setCurrentQuestion(currentQuestion + 1)
+                  }}
+                >
+                  Next
+                </Button>
               )}
             </div>
           </Card>
@@ -374,6 +395,13 @@ export default function ExamPage() {
                   key={idx}
                   onClick={() => {
                     if (questionLocking && idx < currentQuestion) return
+                    const curr = questions[currentQuestion]
+                    const isEssay = curr.question_type === "essay"
+                    const text = String(responses[curr.id]?.textResponse || "").trim()
+                    if (isEssay && text === "") {
+                      alert("Please complete the current theory question before moving to another question.")
+                      return
+                    }
                     setCurrentQuestion(idx)
                   }}
                   className={`aspect-square rounded text-sm font-semibold transition-colors ${
@@ -403,6 +431,24 @@ export default function ExamPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={handleSubmit} disabled={submitting} className="bg-green-600 hover:bg-green-700">
               {submitting ? "Submitting..." : "Submit"}
+            </AlertDialogAction>
+          </div>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Post-Submission Dialog */}
+      <AlertDialog open={showSubmittedDialog} onOpenChange={setShowSubmittedDialog}>
+        <AlertDialogContent>
+          <AlertDialogTitle>Exams submitted successfully</AlertDialogTitle>
+          <AlertDialogDescription>
+            Results pending. Wait for admin review and publishing before viewing your results.
+          </AlertDialogDescription>
+          <div className="flex gap-4 justify-end pt-4">
+            <AlertDialogAction
+              onClick={() => router.push("/student/dashboard")}
+              className="bg-primary hover:bg-primary/90"
+            >
+              Back to Dashboard
             </AlertDialogAction>
           </div>
         </AlertDialogContent>

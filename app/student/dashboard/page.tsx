@@ -91,6 +91,7 @@ export default function StudentDashboard() {
         } else if (analyticsRes.status === 403) {
           setProfile({ fullName: "", lockedDashboard: true })
         }
+
       } catch (err) {
         console.error("Error during data fetching:", err)
       } finally {
@@ -146,6 +147,7 @@ export default function StudentDashboard() {
             </div>
           </div>
         </div>
+
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Profile Card */}

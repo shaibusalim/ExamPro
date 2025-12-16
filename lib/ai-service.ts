@@ -423,6 +423,7 @@ export async function gradeTheoryAnswer(
   const useLLM = !!process.env.OPENAI_API_KEY;
   const clamp = (n: number) => Math.max(0, Math.min(maxMarks, Math.round(n)));
   const sa = String(studentAnswer || '').toLowerCase();
+  const saNorm = sa.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
   if (rubric && Array.isArray(rubric.keyPoints) && rubric.keyPoints.length > 0) {
     const pts = rubric.keyPoints;
     let totalWeight = 0;
@@ -437,17 +438,29 @@ export async function gradeTheoryAnswer(
       let match = false;
       for (const c of candidates) {
         if (!c) continue;
-        const terms = c.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean);
+        const cNorm = c.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+        if (cNorm && saNorm.includes(cNorm)) { match = true; break; }
+        const terms = cNorm.split(/\s+/).filter(Boolean);
         let hits = 0;
         for (const t of terms) {
           if (t.length < 3) continue;
           if (sa.includes(t)) hits++;
         }
-        if (hits >= Math.max(1, Math.ceil(terms.length * 0.4))) { match = true; break; }
+        if (hits >= Math.max(1, Math.ceil(terms.length * 0.3))) { match = true; break; }
       }
       if (match) earned += w;
     }
     const scaled = totalWeight > 0 ? (earned / totalWeight) * maxMarks : 0;
+    if (earned >= totalWeight) return maxMarks;
+    const expectedAll = pts.map((kp) => String(kp.point || '')).join(' ').toLowerCase().replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    if (expectedAll) {
+      const setA = new Set(saNorm.split(' ').filter(Boolean));
+      const setB = new Set(expectedAll.split(' ').filter(Boolean));
+      let inter = 0;
+      setB.forEach((t) => { if (t.length >= 3 && setA.has(t)) inter++; });
+      const sim = setB.size > 0 ? inter / setB.size : 0;
+      if (sim >= 0.6) return maxMarks;
+    }
     return clamp(scaled);
   }
   if (useLLM) {
@@ -472,6 +485,8 @@ export async function gradeTheoryAnswer(
   }
   const a = sa;
   const b = String(correctAnswer || '').toLowerCase();
+  const bNorm = b.replace(/[^a-z0-9\s]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (bNorm && saNorm.includes(bNorm)) return maxMarks;
   function tokens(s: string) {
     return new Set(s.replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(Boolean));
   }
@@ -493,7 +508,7 @@ export async function gradeTheoryAnswer(
   });
   const sim = tb.size > 0 ? inter / tb.size : 0;
   const scoreFromSim =
-    sim >= 0.8 ? maxMarks :
+    sim >= 0.6 ? maxMarks :
     sim >= 0.5 ? Math.round(0.8 * maxMarks) :
     sim >= 0.35 ? Math.round(0.6 * maxMarks) :
     sim >= 0.2 ? Math.round(0.4 * maxMarks) :

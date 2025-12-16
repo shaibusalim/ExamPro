@@ -10,6 +10,7 @@ import { StudentNav } from "@/components/student-nav"
 import { Download } from "lucide-react"
 
 interface Result {
+  status?: string
   score: number
   total_marks: number
   percentage: number
@@ -52,12 +53,24 @@ export default function ResultsPage() {
         const r1 = await fetch(`/api/student/exam/${examId}/result`, { headers })
         if (r1.ok) {
           const data = await r1.json()
-          setResult({
-            score: Number(data.score || 0),
-            total_marks: Number(data.total_marks || 0),
-            percentage: Number(data.percentage || 0),
-            submitted_at: String(data.submitted_at || new Date().toISOString()),
-          })
+          if (String(data.status || "") === "pending_review") {
+            setResult({
+              status: "pending_review",
+              score: 0,
+              total_marks: 0,
+              percentage: 0,
+              submitted_at: String(data.submitted_at || new Date().toISOString()),
+            })
+          } else {
+            setResult({
+              status: String(data.status || "published"),
+              score: Number(data.score || 0),
+              total_marks: Number(data.total_marks || 0),
+              percentage: Number(data.percentage || 0),
+              submitted_at: String(data.submitted_at || new Date().toISOString()),
+              answers: Array.isArray(data.answers) ? data.answers : undefined,
+            })
+          }
         } else {
           // Fallback: find in exams list
           const res = await fetch("/api/student/exams", { headers })
@@ -109,6 +122,23 @@ export default function ResultsPage() {
 
   if (!result) {
     return <div className="flex items-center justify-center min-h-screen">No results found</div>
+  }
+
+  if (result.status === "pending_review") {
+    return (
+      <div className="min-h-screen bg-background">
+        <StudentNav />
+        <main className="max-w-4xl mx-auto px-4 py-12">
+          <Card className="p-6 md:p-12 mb-8 text-center space-y-6">
+            <div className="text-2xl font-semibold">Your results are pending admin review</div>
+            <p className="text-muted-foreground">You will be notified when your results are published.</p>
+            <Link href="/student/dashboard" className="inline-block">
+              <Button className="mt-4">Back to Dashboard</Button>
+            </Link>
+          </Card>
+        </main>
+      </div>
+    )
   }
 
   const isPassed = result.percentage >= 50

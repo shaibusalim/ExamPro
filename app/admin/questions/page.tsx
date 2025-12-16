@@ -43,6 +43,7 @@ export default function QuestionsPage() {
   const [editQuestion, setEditQuestion] = useState<Question | null>(null)
   const [editText, setEditText] = useState("")
   const [editMarks, setEditMarks] = useState<number>(1)
+  const [editRubricPoints, setEditRubricPoints] = useState<Array<{ point: string; weight: number }>>([])
 
   const [formData, setFormData] = useState({
     topicId: "",
@@ -139,6 +140,8 @@ export default function QuestionsPage() {
     setEditQuestion(q)
     setEditText(String((q as any).questionText || (q as any).question || ""))
     setEditMarks(typeof (q as any).marks === "number" ? (q as any).marks : 1)
+    const kp = ((q as any).rubric && Array.isArray((q as any).rubric.keyPoints)) ? ((q as any).rubric.keyPoints as Array<any>) : []
+    setEditRubricPoints(kp.map((p) => ({ point: String(p.point || ""), weight: Number(p.weight || 1) })))
     setEditOpen(true)
   }
 
@@ -156,6 +159,11 @@ export default function QuestionsPage() {
         body: JSON.stringify({
           questionText: editText,
           marks: editMarks,
+          rubric: {
+            keyPoints: editRubricPoints
+              .filter((p) => String(p.point || "").trim().length > 0)
+              .map((p) => ({ point: String(p.point).trim(), weight: Number(p.weight || 1) })),
+          },
         }),
       })
       if (!res.ok) {
@@ -165,7 +173,11 @@ export default function QuestionsPage() {
       }
       const updated = await res.json()
       setQuestions((prev) =>
-        prev.map((q) => (q.id === editQuestion.id ? { ...q, questionText: updated.questionText, marks: updated.marks } as any : q)),
+        prev.map((q) =>
+          q.id === editQuestion.id
+            ? ({ ...q, questionText: updated.questionText, marks: updated.marks, rubric: updated.rubric } as any)
+            : q,
+        ),
       )
       setEditOpen(false)
       setSuccess("Question updated")
@@ -723,7 +735,7 @@ export default function QuestionsPage() {
           <DialogContent className="sm:max-w-lg">
             <DialogHeader>
               <DialogTitle>Edit Question</DialogTitle>
-              <DialogDescription>Update the question text and marks</DialogDescription>
+              <DialogDescription>Update the question text, marks, and rubric key points</DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="space-y-2">
@@ -739,6 +751,55 @@ export default function QuestionsPage() {
                   value={editMarks}
                   onChange={(e) => setEditMarks(Number(e.target.value))}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Rubric Key Points</Label>
+                <div className="space-y-3">
+                  {editRubricPoints.map((kp, idx) => (
+                    <div key={idx} className="grid grid-cols-12 gap-2">
+                      <Input
+                        className="col-span-8"
+                        placeholder="Key point"
+                        value={kp.point}
+                        onChange={(e) => {
+                          const next = [...editRubricPoints]
+                          next[idx] = { ...next[idx], point: e.target.value }
+                          setEditRubricPoints(next)
+                        }}
+                      />
+                      <Input
+                        className="col-span-3"
+                        type="number"
+                        min={0}
+                        placeholder="Weight"
+                        value={String(kp.weight)}
+                        onChange={(e) => {
+                          const val = Number(e.target.value)
+                          const next = [...editRubricPoints]
+                          next[idx] = { ...next[idx], weight: Number.isFinite(val) ? val : 1 }
+                          setEditRubricPoints(next)
+                        }}
+                      />
+                      <Button
+                        variant="destructive"
+                        className="col-span-1"
+                        onClick={() => {
+                          const next = [...editRubricPoints]
+                          next.splice(idx, 1)
+                          setEditRubricPoints(next)
+                        }}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    variant="outline"
+                    onClick={() => setEditRubricPoints([...editRubricPoints, { point: "", weight: 1 }])}
+                  >
+                    Add Key Point
+                  </Button>
+                </div>
               </div>
             </div>
             <DialogFooter>

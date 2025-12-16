@@ -13,12 +13,9 @@ export async function POST(req: Request) {
 Generate a set of exam questions for Basic 7–8 ICT based on the Ghana GES curriculum.
 
 Requirements:
-- 30 Objective questions (multiple choice)
-- 10 Theory questions
-- Total marks = 100
-- Objective questions = 1 mark each
-- Theory questions = variable marks per question (not all equal)
-- Ensure the sum of all question marks equals exactly 100
+- 35 Objective questions (multiple choice) - each worth 2 marks
+- 5 Theory questions - each worth 6 marks
+- Total marks = 100 (35 × 2 + 5 × 6 = 70 + 30 = 100)
 - Include diagrams or image descriptions ONLY when needed
 - Return ONLY JSON in this format:
 
@@ -28,7 +25,7 @@ Requirements:
       "question": "",
       "options": ["", "", "", ""],
       "correctAnswer": "",
-      "marks": 1,
+      "marks": 2,
       "media": null
     }
   ],
@@ -36,7 +33,7 @@ Requirements:
     {
       "question": "",
       "correctAnswer": "",
-      "marks": 7,
+      "marks": 6,
       "media": null
     }
   ]

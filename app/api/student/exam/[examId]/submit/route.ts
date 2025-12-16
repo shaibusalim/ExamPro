@@ -1,181 +1,150 @@
-import { type NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { verifyToken } from "@/lib/auth";
 import { firestore } from "@/lib/firebaseAdmin";
 import { Timestamp } from "firebase-admin/firestore";
 import { gradeTheoryAnswer } from "@/lib/ai-service";
 
-export async function POST(request: NextRequest, context: { params: Promise<{ examId: string }> }) {
+const OBJ_MARK = 2;
+const THEORY_MARK = 6;
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: { examId: string } }
+) {
   try {
     const authHeader = request.headers.get("authorization");
-    if (!authHeader) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    if (!authHeader) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const token = authHeader.replace("Bearer ", "");
-    const decoded = verifyToken(token);
-
+    const decoded = verifyToken(authHeader.replace("Bearer ", ""));
     if (!decoded || decoded.role !== "student") {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { attemptId, responses } = await request.json();
-    const { examId } = await context.params;
     const studentId = decoded.userId;
+    const examId = params.examId;
 
     const attemptRef = firestore.collection("exam_attempts").doc(attemptId);
-    const attemptDoc = await attemptRef.get();
-    if (!attemptDoc.exists || attemptDoc.data()?.studentId !== studentId || attemptDoc.data()?.examId !== examId) {
-      return NextResponse.json({ error: "Attempt not found or unauthorized" }, { status: 404 });
+    const attemptSnap = await attemptRef.get();
+
+    if (!attemptSnap.exists) {
+      return NextResponse.json({ error: "Attempt not found" }, { status: 404 });
     }
 
-    const attemptData = attemptDoc.data() as any;
-    if (attemptData.status === "completed") {
-      return NextResponse.json({ error: "Exam already submitted" }, { status: 400 });
-    }
+    let score = 0;
+    let totalMarks = 0;
+    const answers: Record<string, any> = {};
 
-    let totalScore = 0;
-    let totalPossibleMarks = 0;
-    const studentAnswers: { [questionId: string]: any } = {};
-    const topicAggregate: { [topicId: string]: { score: number; total: number } } = {};
-    const marksByQuestionId: Record<string, number> = {};
+    for (const res of responses) {
+      const qSnap = await firestore.collection("questions").doc(res.questionId).get();
+      if (!qSnap.exists) continue;
 
-    const selectedQuestionIds: string[] = Array.isArray(attemptData.selectedQuestionIds) ? attemptData.selectedQuestionIds : [];
-    if (selectedQuestionIds.length > 0) {
-      for (const qid of selectedQuestionIds) {
-        let qd: any = null;
-        const eq = await firestore.collection("exams").doc(examId).collection("questions").doc(qid).get();
-        if (eq.exists) {
-          qd = eq.data();
-        } else {
-          const qt = await firestore.collection("questions").doc(qid).get();
-          if (qt.exists) qd = qt.data();
-        }
-        if (!qd) continue;
-        const tRaw = String(qd.questionType || qd.type || qd.question_type || "mcq").toLowerCase();
-        const baseMarks = typeof qd.marks === "number" ? qd.marks : (tRaw === "mcq" || tRaw === "true_false" ? 2 : (tRaw === "essay" || tRaw === "theory" ? 6 : 1));
-        marksByQuestionId[qid] = baseMarks;
-        totalPossibleMarks += baseMarks;
-      }
-    }
+      const q = qSnap.data()!;
+      const type = String(q.questionType || q.type || "mcq").toLowerCase();
 
-    for (const response of responses) {
-      const questionId = response.questionId;
-      const questionTopDoc = await firestore.collection("questions").doc(questionId).get();
-
-      let q: any = null;
-      if (questionTopDoc.exists) {
-        q = questionTopDoc.data();
-      } else {
-        const eqSnap = await firestore
-          .collection("exams")
-          .doc(examId)
-          .collection("questions")
-          .doc(questionId)
-          .get();
-        if (eqSnap.exists) q = eqSnap.data();
-        if (!q) {
-          continue;
-        }
+      // Get question marks from exam attempt data or question data
+      let questionMarks = OBJ_MARK; // default fallback
+      if (type === "mcq" || type === "true_false") {
+        questionMarks = OBJ_MARK;
+      } else if (type === "theory" || type === "essay") {
+        questionMarks = THEORY_MARK;
       }
 
-      let isCorrect = false;
-      let marksAwarded = 0;
-      const typeForFallback = String(q.questionType || q.type || q.question_type || "mcq").toLowerCase();
-      const fallbackMarks = (typeForFallback === "mcq" || typeForFallback === "true_false") ? 2 : ((typeForFallback === "essay" || typeForFallback === "theory") ? 6 : 1);
-      const questionMarks = typeof marksByQuestionId[questionId] === "number" ? marksByQuestionId[questionId] : (typeof q.marks === "number" ? q.marks : fallbackMarks);
+      // Check if we can get actual marks from exam question data
+      try {
+        const examDoc = await firestore.collection("exams").doc(examId).get();
+        if (examDoc.exists) {
+          const examQuestionsSnap = await firestore
+            .collection("exams")
+            .doc(examId)
+            .collection("questions")
+            .where("questionId", "==", res.questionId)
+            .get();
 
-      const type = String(q.questionType || q.type || q.question_type || "mcq");
-      const typeNorm = type.toLowerCase();
-      const topicId = String((q as any).topicId || "");
-
-      if (typeNorm === "mcq" || typeNorm === "true_false") {
-        const selectedId = response.selectedOptionId || response.selectedOptionText || response.selectedOption || null;
-        if (selectedId) {
-          const optSnap = await firestore.collection("questions").doc(questionId).collection("options").get();
-          const correctOpt = optSnap.docs.find((d) => (d.data() as any).isCorrect === true);
-          if (correctOpt) {
-            const correctId = correctOpt.id;
-            if (String(selectedId) === String(correctId)) {
-              isCorrect = true;
-              marksAwarded = questionMarks;
-              totalScore += marksAwarded;
-            } else {
-              const selectedText = String(response.selectedOptionText || response.selectedOptionId || "").toLowerCase();
-              const correctText = String((correctOpt.data() as any).optionText || "").toLowerCase();
-              if (selectedText && correctText && selectedText === correctText) {
-                isCorrect = true;
-                marksAwarded = questionMarks;
-                totalScore += marksAwarded;
-              } else if (typeNorm === "true_false") {
-                const tf = ["true", "false"];
-                if (tf.includes(String(selectedId).toLowerCase())) {
-                  const match = optSnap.docs.find((d) => String((d.data() as any).optionText || "").toLowerCase() === String(selectedId).toLowerCase());
-                  if (match && (match.data() as any).isCorrect === true) {
-                    isCorrect = true;
-                    marksAwarded = questionMarks;
-                    totalScore += marksAwarded;
-                  }
-                }
-              }
+          if (!examQuestionsSnap.empty) {
+            const examQData = examQuestionsSnap.docs[0].data();
+            if (typeof examQData.marks === "number") {
+              questionMarks = examQData.marks;
             }
           }
         }
-      } else if (typeNorm === "theory" || typeNorm === "essay") {
-        const stem = String((q as any).questionText || (q as any).question_text || (q as any).question || "");
-        const correctRaw = (q as any).correctAnswer;
-        const correct = Array.isArray(correctRaw)
-          ? String(correctRaw.filter(Boolean).join("; "))
-          : String(correctRaw || (q as any).explanation || "");
-        const textResp = String(response.textResponse || "");
-        let rubricForGrade = (q as any).rubric;
-        if ((!rubricForGrade || !Array.isArray(rubricForGrade?.keyPoints) || rubricForGrade.keyPoints.length === 0) && Array.isArray(correctRaw)) {
-          rubricForGrade = {
-            keyPoints: (correctRaw as string[])
-              .filter(Boolean)
-              .map((p: string) => ({ point: String(p), weight: 1 })),
-          };
+      } catch (err) {
+        // Fallback to default marks if lookup fails
+        console.warn("Could not get question marks from exam data:", err);
+      }
+
+      let marksAwarded = 0;
+
+      if (type === "mcq" || type === "true_false") {
+        totalMarks += questionMarks;
+
+        const opts = await firestore
+          .collection("questions")
+          .doc(res.questionId)
+          .collection("options")
+          .get();
+
+        const correct = opts.docs.find(d => d.data().isCorrect === true);
+        if (
+          correct &&
+          (res.selectedOptionId === correct.id ||
+            res.selectedOptionText?.toLowerCase() ===
+              correct.data().optionText?.toLowerCase())
+        ) {
+          marksAwarded = questionMarks;
         }
-        const rawScore = await gradeTheoryAnswer(stem, textResp, correct, questionMarks, rubricForGrade);
-        marksAwarded = rawScore;
-        totalScore += marksAwarded;
       }
 
-      studentAnswers[questionId] = {
-        questionId,
-        selectedOptionText: response.selectedOptionText || null,
-        textResponse: response.textResponse || null,
-        isCorrect,
+      if (type === "theory" || type === "essay") {
+        totalMarks += questionMarks;
+
+        const modelAnswer = Array.isArray(q.correctAnswer)
+          ? q.correctAnswer.join("; ")
+          : q.correctAnswer || "";
+
+        const raw = await gradeTheoryAnswer(
+          q.questionText,
+          res.textResponse || "",
+          modelAnswer,
+          questionMarks,
+          q.rubric || null
+        );
+
+        // Clamp between 0 and questionMarks
+        marksAwarded = Math.max(0, Math.min(questionMarks, raw));
+      }
+
+      score += marksAwarded;
+
+      answers[res.questionId] = {
         marksAwarded,
-        isAnswered: true,
+        questionMarks,
+        studentAnswer: res.textResponse || res.selectedOptionText || null,
       };
-
-      if (topicId) {
-        const agg = topicAggregate[topicId] || { score: 0, total: 0 };
-        agg.total += questionMarks;
-        agg.score += marksAwarded;
-        topicAggregate[topicId] = agg;
-      }
     }
 
-    const percentage = totalPossibleMarks > 0 ? Math.round((totalScore / totalPossibleMarks) * 100) : 0;
+    const percentage = Math.round((score / totalMarks) * 100);
 
     await attemptRef.update({
-      status: "completed",
+      status: "pending_review",
+      adminReviewed: false,
+      published: false,
       submittedAt: Timestamp.now(),
-      score: totalScore,
-      totalMarks: totalPossibleMarks,
+      score,
+      totalMarks,
       percentage,
-      answers: studentAnswers,
-      topicScores: topicAggregate,
+      answers,
     });
 
     return NextResponse.json({
-      score: totalScore,
-      totalMarks: totalPossibleMarks,
+      status: "pending_review",
+      score,
+      totalMarks,
       percentage,
-      message: "Exam submitted successfully",
+      message: "Submission received. Your results will be available after admin review.",
     });
-  } catch (error) {
-    return NextResponse.json({ error: "Failed to submit exam" }, { status: 500 });
+  } catch (e) {
+    console.error(e);
+    return NextResponse.json({ error: "Submission failed" }, { status: 500 });
   }
 }

@@ -94,11 +94,14 @@ export async function GET(request: NextRequest) {
       if (!attemptSnapshot.empty) {
         const attemptData = attemptSnapshot.docs[0].data() as any;
         attemptId = attemptSnapshot.docs[0].id;
-        score = attemptData.score ?? null;
         status = String(attemptData.status || "");
-        attemptTotalMarks = typeof attemptData.totalMarks === 'number' ? attemptData.totalMarks : null;
-        attemptPercentage = typeof attemptData.percentage === 'number' ? attemptData.percentage : null;
-        attemptSubmittedAt = attemptData.submittedAt ? String((attemptData.submittedAt as any).toDate?.() || attemptData.submittedAt) : null;
+        // Only expose scoring fields when published/completed
+        if (["published", "completed"].includes(status)) {
+          score = attemptData.score ?? null;
+          attemptTotalMarks = typeof attemptData.totalMarks === 'number' ? attemptData.totalMarks : null;
+          attemptPercentage = typeof attemptData.percentage === 'number' ? attemptData.percentage : null;
+          attemptSubmittedAt = attemptData.submittedAt ? String((attemptData.submittedAt as any).toDate?.() || attemptData.submittedAt) : null;
+        }
       }
 
       return {
@@ -107,12 +110,12 @@ export async function GET(request: NextRequest) {
         class_name: className,
         duration_minutes: Number((examData as any).durationMinutes || (examData as any).duration_minutes || 60),
         total_marks: Number((examData as any).totalMarks || (examData as any).total_marks || 0),
-        attempt_id: status === "completed" ? attemptId : null,
-        score: status === "completed" ? score : null,
+        attempt_id: attemptId, // hide exam from "Available" once attempted
+        score: ["published", "completed"].includes(String(status || "")) ? score : null,
         status: status || null,
-        attempt_total_marks: status === "completed" ? attemptTotalMarks : null,
-        attempt_percentage: status === "completed" ? attemptPercentage : null,
-        attempt_submitted_at: status === "completed" ? attemptSubmittedAt : null,
+        attempt_total_marks: ["published", "completed"].includes(String(status || "")) ? attemptTotalMarks : null,
+        attempt_percentage: ["published", "completed"].includes(String(status || "")) ? attemptPercentage : null,
+        attempt_submitted_at: ["published", "completed"].includes(String(status || "")) ? attemptSubmittedAt : null,
       };
     }));
 
