@@ -4,6 +4,8 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { AdminNav } from "@/components/admin-nav"
 import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Badge } from "@/components/ui/badge"
 import { Spinner } from "@/components/ui/spinner"
@@ -35,6 +37,8 @@ export default function AdminScoresPage() {
   const [attempts, setAttempts] = useState<any[]>([])
   const [studentsMap, setStudentsMap] = useState<Record<string, { fullName: string; email?: string; classLevel?: string }>>({})
   const [loading, setLoading] = useState(true)
+  const [selectedClass, setSelectedClass] = useState<string>("all")
+  const [searchQuery, setSearchQuery] = useState("")
 
   useEffect(() => {
     const token = localStorage.getItem("auth_token")
@@ -312,6 +316,43 @@ export default function AdminScoresPage() {
     )
   }
 
+  const filteredAttempts = attempts.filter((a) => {
+    const stu = studentsMap[String(a.studentId || "")] || { fullName: "", email: "", classLevel: "" }
+    
+    // Filter by class
+    if (selectedClass !== "all") {
+      const stuClass = (stu.classLevel || "").toUpperCase().replace(/\s+/g, "")
+      const filterClass = selectedClass.toUpperCase().replace(/\s+/g, "")
+      
+      // Allow partial matches (e.g. "BASIC7" matches "B7" logic if we normalize)
+      // If selected is B7, match "B7", "BASIC7", "BASIC 7"
+      // If selected is B8, match "B8", "BASIC8", "BASIC 8"
+      
+      const isB7 = filterClass.includes("7")
+      const isB8 = filterClass.includes("8")
+      
+      const studentIsB7 = stuClass.includes("7") || stuClass === "B7" || stuClass.includes("BASIC7")
+      const studentIsB8 = stuClass.includes("8") || stuClass === "B8" || stuClass.includes("BASIC8")
+
+      if (isB7 && !studentIsB7) return false
+      if (isB8 && !studentIsB8) return false
+    }
+
+    // Filter by search query
+    if (searchQuery) {
+      const query = searchQuery.toLowerCase()
+      const name = (stu.fullName || "").toLowerCase()
+      const email = (stu.email || "").toLowerCase()
+      const exam = (a.examTitle || a.examId || "").toLowerCase()
+      
+      if (!name.includes(query) && !email.includes(query) && !exam.includes(query)) {
+        return false
+      }
+    }
+
+    return true
+  })
+
   return (
     <div className="min-h-screen bg-background">
       <AdminNav />
@@ -321,7 +362,29 @@ export default function AdminScoresPage() {
           <p className="text-muted-foreground">Review and publish submitted exam results</p>
         </div>
 
-        <Section title="Submitted Attempts" rows={attempts} />
+        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="w-full sm:w-64">
+            <Select value={selectedClass} onValueChange={setSelectedClass}>
+              <SelectTrigger>
+                <SelectValue placeholder="Filter by Class" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Classes</SelectItem>
+                <SelectItem value="Basic 7">Basic 7</SelectItem>
+                <SelectItem value="Basic 8">Basic 8</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="w-full sm:w-96">
+            <Input 
+              placeholder="Search by student name, email or exam..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+
+        <Section title="Submitted Attempts" rows={filteredAttempts} />
       </main>
     </div>
   )
